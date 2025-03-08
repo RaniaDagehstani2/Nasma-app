@@ -1,0 +1,2 @@
+C:/Users/xxron/Desktop/CPCS499/testtest/android/app/.cxx/Debug/2i75t4t5/x86/CMakeFiles/edit_cache.dir
+C:/Users/xxron/Desktop/CPCS499/testtest/android/app/.cxx/Debug/2i75t4t5/x86/CMakeFiles/rebuild_cache.dir

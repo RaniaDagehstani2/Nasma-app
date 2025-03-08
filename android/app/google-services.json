@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "726740767930",
+    "firebase_url": "https://nasma-project-default-rtdb.firebaseio.com",
+    "project_id": "nasma-project",
+    "storage_bucket": "nasma-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726740767930:android:6e700898c8c068fc62de83",
+        "android_client_info": {
+          "package_name": "com.example.nasma_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvQcCHc4jp2E2FQJ9zSBsy8SRAqZ1ZHyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726740767930:android:72e1015006754b5e62de83",
+        "android_client_info": {
+          "package_name": "com.example.testtest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvQcCHc4jp2E2FQJ9zSBsy8SRAqZ1ZHyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
