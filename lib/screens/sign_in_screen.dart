@@ -230,15 +230,6 @@ class _SignInScreenState extends State<SignInScreen> {
               Center(
                 child: ElevatedButton(
                   onPressed: isFormValid && !isLoading ? _signIn : null,
-                  // style: ElevatedButton.styleFrom(
-                  //   backgroundColor: isFormValid
-                  //       ? const Color(0xFF8699DA)
-                  //       : const Color(0xFFB1B1B1),
-                  //   padding: const EdgeInsets.symmetric(
-                  //       vertical: 15, horizontal: 60),
-                  //   shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(30)),
-                  // ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isFormValid
                         ? const Color(0xFF8699DA)
