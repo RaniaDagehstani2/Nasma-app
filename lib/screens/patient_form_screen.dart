@@ -257,7 +257,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   void _savePatientData() async {
     if (!isValid) return;
-
+    String currentDate = DateTime.now().toLocal().toString().split(' ')[0];
     await _database.child("Patient").child(widget.userId).update({
       "Patient_ID": widget.userId,
       "Fname": widget.firstName,
@@ -268,6 +268,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.isDependent ? widget.userId : "",
       "Treatmentplan_ID": "",
+      "rday": currentDate,
     });
 
     Navigator.pushReplacement(

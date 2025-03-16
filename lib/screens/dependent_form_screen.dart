@@ -139,6 +139,7 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
   // }
   void _saveDependentData() async {
     if (!isValid) return;
+    String currentDate = DateTime.now().toLocal().toString().split(' ')[0];
     String dependentId = idController.text.trim();
 
     await _database.child("Patient").child(dependentId).set({
@@ -151,6 +152,7 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.userId, // Set guardian to the current user
       "Treatmentplan_ID": "", // Always empty
+      "rday": currentDate,
     });
 
     Navigator.pushReplacement(
@@ -221,8 +223,16 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
               items: doctors.map((doc) {
                 return DropdownMenuItem<String>(
                   value: doc["id"],
-                  child: Text(
-                    "${doc["Fname"]} ${doc["Lname"]} - ${doc["Hospital"]} | ${doc["Speciality"]} | ${doc["Degree"]}",
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Name: ${doc["Fname"]} ${doc["Lname"]}",
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text("Hospital: ${doc["Hospital"]}"),
+                      Text("Specialty: ${doc["Speciality"]}"),
+                      Text("Degree: ${doc["Degree"]}"),
+                      const Divider(), // Adds a horizontal line between doctors
+                    ],
                   ),
                 );
               }).toList(),
@@ -232,8 +242,22 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
                   validateInputs();
                 });
               },
+              selectedItemBuilder: (BuildContext context) {
+                return doctors.map<Widget>((doc) {
+                  return Text(
+                    "${doc["Fname"]} ${doc["Lname"]}", // Show only the doctor's name after selection
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  );
+                }).toList();
+              },
               decoration: InputDecoration(
-                errorText: doctorError,
+                labelText: "Select a Doctor",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                isDense: true, // Removes extra padding
+                errorText:
+                    doctorError, // Error message if doctor is not selected
               ),
             ),
 
