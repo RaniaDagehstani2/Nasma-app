@@ -9,6 +9,7 @@ import 'connect_patch_screen.dart';
 import 'package:testtest/screens/connect_patch_screen.dart';
 import 'package:testtest/services/notification_service.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userId; // ✅ Add this
@@ -180,123 +181,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Future<void> fetchTreatmentPlan(String patientId) async {
-  //   print("Fetching treatment plan for patient ID: $patientId");
-  //   DatabaseReference databaseRef = FirebaseDatabase.instance.ref();
-  //   DatabaseEvent patientSnapshot =
-  //       await databaseRef.child('Patient').child(patientId).once();
 
-  //   print(
-  //       "Patient treatment plan data fetched: ${patientSnapshot.snapshot.value}");
 
-  //   if (patientSnapshot.snapshot.value != null) {
-  //     Map<String, dynamic> patientData =
-  //         Map<String, dynamic>.from(patientSnapshot.snapshot.value as Map);
 
-  //     String treatmentPlanId = patientData['Treatmentplan_ID'];
-  //     print("Fetched treatment plan ID: $treatmentPlanId");
-
-  //     DatabaseEvent treatmentPlanSnapshot = await databaseRef
-  //         .child('TreatmentPlan')
-  //         .child(treatmentPlanId)
-  //         .once();
-
-  //     print(
-  //         "Treatment plan data fetched: ${treatmentPlanSnapshot.snapshot.value}");
-
-  //     if (treatmentPlanSnapshot.snapshot.value != null) {
-  //       Map<String, dynamic> treatmentPlanData = Map<String, dynamic>.from(
-  //           treatmentPlanSnapshot.snapshot.value as Map);
-
-  //       if (treatmentPlanData['isApproved'] == true) {
-  //         double ACT = treatmentPlanData['ACT'] ?? 0;
-
-  //         setState(() {
-  //           if (ACT >= 20) {
-  //             healthMessage = "My Asthma is Well Controlled";
-  //             healthImage = 'assets/smileface.png';
-  //           } else {
-  //             healthMessage = "My Asthma is Worsening";
-  //             healthImage = 'assets/face.png';
-  //           }
-  //         });
-
-  //         String stepNum = treatmentPlanData['stepNum'].toString();
-  //         print("Fetched step number: $stepNum");
-
-  //         DatabaseEvent detailsSnapshot =
-  //             await databaseRef.child('Detials').once();
-
-  //         print("Details data fetched: ${detailsSnapshot.snapshot.value}");
-
-  //         if (detailsSnapshot.snapshot.value != null) {
-  //           Map<String, dynamic> allDetails = Map<String, dynamic>.from(
-  //               detailsSnapshot.snapshot.value as Map);
-
-  //           List<Map<String, dynamic>> filteredDetails = [];
-
-  //           allDetails.forEach((key, value) {
-  //             Map<String, dynamic> detail = Map<String, dynamic>.from(value);
-
-  //             if (detail['stepNum'].toString() == stepNum) {
-  //               print("Matching detail found for stepNum: $stepNum");
-
-  //               String time = detail['time'];
-  //               bool isPM = time.toLowerCase().contains("pm");
-
-  //               Color cardColor = isPM ? Color(0xFF6676AA) : Color(0xFFF9FD88);
-  //               String iconPath =
-  //                   isPM ? "assets/night 1.png" : "assets/sun.png";
-  //               Color titleColor = isPM
-  //                   ? Color.fromRGBO(196, 237, 245, 1)
-  //                   : Color.fromRGBO(134, 153, 218, 1);
-  //               Color timeColor = isPM ? Colors.white : Colors.black;
-  //               Color dosageColor = isPM ? Colors.grey[300]! : Colors.black;
-
-  //               filteredDetails.add({
-  //                 "stepNum": stepNum,
-  //                 "title": detail['Name'],
-  //                 "time": detail['time'],
-  //                 "dosage": detail['quantity'],
-  //                 "Frequancy": detail['Freq'],
-  //                 "icon": iconPath,
-  //                 "bgColor": cardColor,
-  //                 "titleColor": titleColor,
-  //                 "timeColor": timeColor,
-  //                 "dosageColor": dosageColor,
-  //               });
-  //             }
-  //           });
-
-  //           print("Final filtered treatment details: $filteredDetails");
-
-  //           setState(() {
-  //             treatmentPlans = filteredDetails;
-  //           });
-  //         }
-  //       } else {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(content: Text("Treatment plan is not approved yet.")),
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
+//----------------------------Furat----------------------------------------------
+     
+//----------------------------------------------------------------------------------------
 
   Future<void> fetchTreatmentPlan(String patientId) async {
     print("Fetching treatment plan for patient ID: $patientId");
+
     DatabaseReference databaseRef = FirebaseDatabase.instance.ref();
     DatabaseEvent patientSnapshot =
         await databaseRef.child('Patient').child(patientId).once();
-
-    print(
-        "Patient treatment plan data fetched: ${patientSnapshot.snapshot.value}");
 
     if (patientSnapshot.snapshot.value != null) {
       Map<String, dynamic> patientData =
           Map<String, dynamic>.from(patientSnapshot.snapshot.value as Map);
 
-      String treatmentPlanId = patientData['Treatmentplan_ID'];
+      String treatmentPlanId = patientData['TreatmentPlan_ID'];
       print("Fetched treatment plan ID: $treatmentPlanId");
 
       DatabaseEvent treatmentPlanSnapshot = await databaseRef
@@ -304,51 +207,138 @@ class _HomeScreenState extends State<HomeScreen> {
           .child(treatmentPlanId)
           .once();
 
-      print(
-          "Treatment plan data fetched: ${treatmentPlanSnapshot.snapshot.value}");
-
       if (treatmentPlanSnapshot.snapshot.value != null) {
         Map<String, dynamic> treatmentPlanData = Map<String, dynamic>.from(
             treatmentPlanSnapshot.snapshot.value as Map);
 
         if (treatmentPlanData['isApproved'] == true) {
-          double ACT = (treatmentPlanData['ACT'] is int)
-              ? (treatmentPlanData['ACT'] as int).toDouble()
-              : (treatmentPlanData['ACT'] ?? 0.0);
+          // code Furate---------------------------------------------------------------
+          if (treatmentPlanData.containsKey('intakeTimes') &&
+              treatmentPlanData.containsKey('MedicationName') &&
+              treatmentPlanData.containsKey('Dosage')) {
+            Map<dynamic, dynamic> intakeTimesMap =
+                treatmentPlanData['intakeTimes'] as Map<dynamic, dynamic>;
+            Map<dynamic, dynamic> medicationNamesMap =
+                treatmentPlanData['MedicationName'] as Map<dynamic, dynamic>;
+            Map<dynamic, dynamic> dosagesMap =
+                treatmentPlanData['Dosage'] as Map<dynamic, dynamic>;
 
-          setState(() {
-            if (ACT >= 20) {
-              healthMessage = "My Asthma is Well Controlled";
-              healthImage = 'assets/smileface.png';
-            } else {
-              healthMessage = "My Asthma is Worsening";
-              healthImage = 'assets/face.png';
-            }
-          });
+            intakeTimesMap.forEach((key, timeValue) {
+              // ✅ Safety: Ensure key exists in medicationNamesMap & dosagesMap
+              String medicationName =
+                  medicationNamesMap[key]?.toString() ?? "Medication";
+              String dosage = dosagesMap[key]?.toString() ?? "Dosage";
 
-          List<TimeOfDay> intakeTimes = [];
-          if (treatmentPlanData.containsKey('intakeTimes')) {
-            intakeTimes = [];
-            (treatmentPlanData['intakeTimes'] as Map<dynamic, dynamic>)
-                .forEach((key, value) {
-              intakeTimes.add(_parseTime(value)); // Convert to TimeOfDay
+              // ✅ Safety: Ensure timeValue is String
+              if (timeValue != null && timeValue is String) {
+                TimeOfDay intakeTime = _parseTime(timeValue);
+
+                // ✅ Schedule notification for this medication at this time
+                _scheduleNotifications([intakeTime], medicationName, dosage);
+
+                print(
+                    "📅 Scheduled: $medicationName at $intakeTime, Dosage: $dosage");
+              } else {
+                print("🚨 Invalid time for key $key: $timeValue");
+              }
             });
-
-            // ✅ Debugging: Check if times are added
-            print("🕒 Intake Times Parsed: $intakeTimes");
-
-            // ✅ Schedule notifications
-            _scheduleNotifications(intakeTimes, treatmentPlanData['name'],
-                treatmentPlanData['dosage']);
           } else {
-            print("🚨 No intake times found in treatment plan.");
+            print(
+                "🚨 Missing intakeTimes, MedicationName, or Dosage in treatmentPlanData.");
           }
 
-          // ✅ Schedule notifications after fetching the intake times
-          _scheduleNotifications(intakeTimes, treatmentPlanData['name'],
-              treatmentPlanData['dosage']);
+          //  Furat  Code Insert Ends Here----------------------------------
+
+          setState(() {
+            double ACT = (treatmentPlanData['ACT'] is int)
+                ? (treatmentPlanData['ACT'] as int).toDouble()
+                : (treatmentPlanData['ACT'] ?? 0.0);
+
+            healthMessage = ACT >= 20
+                ? "My Asthma is Well Controlled"
+                : "My Asthma is Worsening";
+
+            healthImage =
+                ACT >= 20 ? 'assets/smileface.png' : 'assets/sadface.png';
+          });
+
+          List<Map<String, dynamic>> filteredDetails = [];
+
+          // ✅ Extract Intake Times
+          List<String> intakeTimes = [];
+          if (treatmentPlanData.containsKey('intakeTimes')) {
+            (treatmentPlanData['intakeTimes'] as Map<dynamic, dynamic>)
+                .forEach((key, value) {
+              intakeTimes.add(value.toString());
+            });
+          }
+
+          // ✅ Extract Medications
+          List<String> medications = [];
+          if (treatmentPlanData.containsKey('MedicationName')) {
+            (treatmentPlanData['MedicationName'] as Map<dynamic, dynamic>)
+                .forEach((key, value) {
+              medications.add(value.toString());
+            });
+          }
+
+          // ✅ Extract Dosages
+          List<String> dosages = [];
+          if (treatmentPlanData.containsKey('Dosage')) {
+            (treatmentPlanData['Dosage'] as Map<dynamic, dynamic>)
+                .forEach((key, value) {
+              dosages.add(value.toString());
+            });
+          }
+
+          // ✅ Ensure Equal Lengths (if not, fill missing data)
+          int maxLength = [
+            intakeTimes.length,
+            medications.length,
+            dosages.length
+          ].reduce((a, b) => a > b ? a : b);
+
+          while (intakeTimes.length < maxLength) intakeTimes.add("00:00 AM");
+          while (medications.length < maxLength) medications.add("Unknown");
+          while (dosages.length < maxLength) dosages.add("N/A");
+
+          // ✅ Generate Cards
+          for (int i = 0; i < maxLength; i++) {
+            bool isPM = intakeTimes[i].toLowerCase().contains("pm");
+
+            Color cardColor = isPM
+                ? Color(0xFF6676AA)
+                : Color(0xFFF9FD88); // 🎨 Night (Dark Blue) & Morning (Yellow)
+            String iconPath = isPM ? "assets/night 1.png" : "assets/sun.png";
+            Color titleColor = isPM
+                ? Color(0xFFECF0F1)
+                : Color(0xFF6676AA); // 🌙 Light Text for Dark Mode
+            Color timeColor = isPM ? Colors.white : Colors.black;
+            Color dosageColor = isPM ? Colors.grey[300]! : Colors.black;
+
+            filteredDetails.add({
+              "title": medications[i],
+              "time": intakeTimes[i],
+              "dosage": dosages[i],
+              "icon": iconPath,
+              "bgColor": cardColor,
+              "titleColor": titleColor,
+              "timeColor": timeColor,
+              "dosageColor": dosageColor,
+            });
+          }
+
+          setState(() {
+            treatmentPlans = filteredDetails;
+          });
+        } else {
+          print("🚨 Treatment plan is not approved.");
         }
+      } else {
+        print("🚨 No treatment plan found.");
       }
+    } else {
+      print("🚨 No patient data found.");
     }
   }
 
@@ -597,16 +587,16 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() {
                 if (isActivity) {
                   _selectedActivity = label == "Very affected"
-                      ? "Ubnormal"
+                      ? "High Limitation"
                       : label == "Slightly affected"
-                          ? "Moderate"
-                          : "Normal";
+                          ? "Moderate Limitation"
+                          : "No Limitation";
                 } else {
                   _selectedBreath = label == "Very severe"
-                      ? "Ubnormal"
+                      ? "Severe"
                       : label == "Mild"
                           ? "Moderate"
-                          : "Normal";
+                          : "None";
                 }
               });
             },
@@ -842,73 +832,80 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           "TREATMENT PLAN",
           style: GoogleFonts.poppins(
-            fontSize: screenWidth * 0.06, // Scalable font size
+            fontSize: screenWidth * 0.07, // 🔥 Bigger Title
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
-        SizedBox(height: screenWidth * 0.04), // Scalable vertical spacing
+        SizedBox(height: screenWidth * 0.05), // 🛠️ More space
+
+        // Horizontal Scrollable Cards
         Container(
-          height: 160, // Fixed height for the card container
+          height: 170, // 🔥 Slightly Taller Cards
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: treatmentPlans.length,
             itemBuilder: (context, index) {
               final plan = treatmentPlans[index];
+
               return Container(
-                width: screenWidth * 0.75, // Scalable card width
-                margin: EdgeInsets.only(
-                    right: screenWidth * 0.04), // Scalable margin
-                padding: EdgeInsets.all(screenWidth * 0.04), // Scalable padding
+                width: screenWidth * 0.75,
+                margin: EdgeInsets.only(right: screenWidth * 0.05),
+                padding: EdgeInsets.all(screenWidth * 0.05), // 🛠️ More padding
                 decoration: BoxDecoration(
-                  color: plan["bgColor"],
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+                  color: plan["bgColor"], // 🎨 Dynamic AM/PM Color
+                  borderRadius:
+                      BorderRadius.circular(16), // 🔥 More rounded corners
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(2, 4),
+                    )
+                  ],
                 ),
+
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Image.asset(plan["icon"],
-                        width: screenWidth * 0.18,
-                        height: screenWidth * 0.18), // Scalable icon size
-                    SizedBox(width: screenWidth * 0.03), // Scalable space
+                    // 🌞🌙 Time-based Icon
+                    Image.asset(
+                      plan["icon"],
+                      width: screenWidth * 0.22,
+                      height: screenWidth * 0.22,
+                    ),
+                    SizedBox(width: screenWidth * 0.05), // 🔥 More space
+
+                    // 📌 Text Content
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          plan["title"],
+                          plan["title"], // Medication Name
                           style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.045, // Scalable font size
-                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.06, // 🔥 Bigger Font
+                            fontWeight: FontWeight.w600,
                             color: plan["titleColor"],
                           ),
                         ),
-                        SizedBox(
-                            height: screenWidth *
-                                0.02), // Scalable vertical spacing
+                        SizedBox(height: screenWidth * 0.02), // 🔥 Space
+
                         Text(
-                          "Time: ${plan["time"]}",
+                          "Time: ${plan["time"]}", // Time
                           style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.035, // Scalable font size
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.w500,
                             color: plan["timeColor"],
                           ),
                         ),
-                        SizedBox(
-                            height: screenWidth *
-                                0.02), // Scalable vertical spacing
+                        SizedBox(height: screenWidth * 0.015),
+
                         Text(
-                          "Dosage: ${plan["dosage"]}",
+                          "Dosage: ${plan["dosage"]}", // Dosage
                           style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.035, // Scalable font size
-                            color: plan["dosageColor"],
-                          ),
-                        ),
-                        SizedBox(
-                            height: screenWidth *
-                                0.02), // Scalable vertical spacing
-                        Text(
-                          "Frequency: ${plan["Frequancy"]}",
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.035, // Scalable font size
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.w500,
                             color: plan["dosageColor"],
                           ),
                         ),
@@ -1058,87 +1055,142 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+// ----function to retrieve the last 7 days of medication history from Firebase----
+  Future<Map<String, String>> fetchWeeklyProgress(String patientId) async {
+    if (patientId.isEmpty) return {};
+
+    DatabaseReference ref = FirebaseDatabase.instance
+        .ref()
+        .child("Patient")
+        .child(patientId)
+        .child("MedicationHistory");
+
+    DateTime now = DateTime.now();
+    Map<String, String> weeklyData = {};
+
+    for (int i = 6; i >= 0; i--) {
+      DateTime day = now.subtract(Duration(days: i));
+      String formattedDate =
+          "${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
+
+      DatabaseEvent snapshot =
+          await ref.orderByChild("date").equalTo(formattedDate).once();
+
+      if (snapshot.snapshot.value != null) {
+        Map<dynamic, dynamic> data =
+            snapshot.snapshot.value as Map<dynamic, dynamic>;
+        bool taken = data.values.any((entry) => entry["status"] == "Taken");
+        bool missed = data.values.any((entry) => entry["status"] == "Missed");
+
+        weeklyData[formattedDate] = taken
+            ? "Taken"
+            : missed
+                ? "Missed"
+                : "Partial"; // If neither taken nor missed, it's partial
+      } else {
+        weeklyData[formattedDate] =
+            "No Data"; // If no records exist for that day
+      }
+    }
+
+    return weeklyData;
+  }
+
+// ----fetches real data and updates the weekly progress ui accordingly-----
   Widget _buildWeeklyProgress(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.03, // 3% of screen width
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "WEEKLY PROGRESS",
-            style: GoogleFonts.poppins(
-              fontSize: screenWidth *
-                  0.045, // Scalable font size based on screen width
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(
-              height: screenHeight *
-                  0.02), // Dynamically adjust space based on screen height
-          Container(
-            padding: EdgeInsets.all(
-                screenWidth * 0.04), // Padding scaled with screen width
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
-            ),
-            child: Column(
-              children: [
-                Row(
+    return FutureBuilder<Map<String, String>>(
+      future: fetchWeeklyProgress(patientId), // Fetch real data
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator()); // Show loader
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text("No medication history found."));
+        }
+
+        Map<String, String> weeklyProgress = snapshot.data!;
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "WEEKLY PROGRESS",
+                style: GoogleFonts.poppins(
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+                ),
+                child: Column(
                   children: [
-                    Image.asset(
-                      'assets/dosage.png',
-                      width: screenWidth * 0.08, // Scalable image size
-                      height: screenWidth * 0.08, // Scalable image size
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/dosage.png',
+                          width: screenWidth * 0.08,
+                          height: screenWidth * 0.08,
+                        ),
+                        SizedBox(width: screenWidth * 0.02),
+                        Text(
+                          "Dosage Track",
+                          style: GoogleFonts.poppins(
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(
-                        width: screenWidth *
-                            0.02), // Spacing scaled with screen width
-                    Text(
-                      "Dosage Track",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth *
-                            0.045, // Scalable font size based on screen width
-                        fontWeight: FontWeight.w500,
-                      ),
+                    SizedBox(height: screenHeight * 0.02),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: weeklyProgress.entries.map((entry) {
+                        String date = entry.key;
+                        String status = entry.value;
+                        String imagePath = status == "Taken"
+                            ? "assets/true.png"
+                            : status == "Missed"
+                                ? "assets/false.png"
+                                : "assets/partially.png"; // Orange warning for Partial
+
+                        return Column(
+                          children: [
+                            Text(
+                              // Safa changed this part to convert Date to day name by using Dateform labrary from Dart
+                              DateFormat('E').format(DateTime.parse(
+                                  date)), // Convert date to day name
+                              style: GoogleFonts.poppins(
+                                fontSize: screenWidth * 0.035,
+                              ),
+                            ),
+                            Image.asset(
+                              imagePath,
+                              width: screenWidth * 0.06,
+                              height: screenWidth * 0.06,
+                            ),
+                          ],
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
-                SizedBox(
-                    height: screenHeight *
-                        0.02), // Dynamically adjust space based on screen height
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(6, (index) {
-                    bool missed = index % 3 == 0;
-                    return Column(
-                      children: [
-                        Text(
-                          "JAN ${22 + index}",
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.035, // Scalable font size
-                          ),
-                        ),
-                        Image.asset(
-                          missed ? 'assets/false.png' : 'assets/true.png',
-                          width: screenWidth * 0.06, // Scalable image size
-                          height: screenWidth * 0.06, // Scalable image size
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
