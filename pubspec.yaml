@@ -96,6 +96,13 @@ flutter:
     - assets/woman.png
     - assets/man.png
     - assets/nasmapatch.png
+    - assets/drow_down.png
+    - assets/false.png
+    - assets/true.png
+    - assets/dosage.png
+    - assets/partially.png
+    - assets/sadface.png
+    - assets/smileface.png
     # - assets/background.png
     # - assets/LOGO.png
     # - assets/back.png
