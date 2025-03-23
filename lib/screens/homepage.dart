@@ -404,32 +404,50 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    DatabaseReference databaseRef = FirebaseDatabase.instance.ref();
-    DatabaseEvent patientSnapshot =
-        await databaseRef.child('Patient').child(uid!).once();
+    DatabaseReference alertRef = FirebaseDatabase.instance
+        .ref()
+        .child('Patient')
+        .child(uid!)
+        .child('Alert');
 
-    if (patientSnapshot.snapshot.value != null) {
-      Map<String, dynamic> patientData =
-          Map<String, dynamic>.from(patientSnapshot.snapshot.value as Map);
+    DatabaseEvent alertSnapshot = await alertRef.once();
 
-      String? emergencyPhone = patientData['EM_phone']; // Get phone number
+    if (alertSnapshot.snapshot.value != null) {
+      Map<String, dynamic> alertData =
+          Map<String, dynamic>.from(alertSnapshot.snapshot.value as Map);
 
-      if (emergencyPhone != null && emergencyPhone.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "🚨 Emergency message sent to: $emergencyPhone",
-                style: TextStyle(fontSize: 16),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+      // Example fields in Alert: type, message, timestamp
+      String alertType = alertData['type'] ?? 'Unknown Alert';
+      String alertMessage = alertData['message'] ?? 'Vital signs abnormal!';
+      String alertTime = alertData['timestamp'] ?? '';
+
+      print("🚨 Alert detected: $alertType - $alertMessage at $alertTime");
+
+      // Show notification using your NotificationService
+      NotificationService.showNotification(
+        id: 999, // Unique ID for this notification
+        title: "⚠️ Emergency Alert: $alertType",
+        body: alertMessage,
+      );
+
+      // Optional: Show SnackBar as well
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "🚨 Alert: $alertType - $alertMessage",
+              style: TextStyle(fontSize: 16),
             ),
-          );
-        });
-      }
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+    } else {
+      print("✅ No active alerts found for patient.");
     }
   }
+
 //---------------------------------------------------------------
 
 //--------------------Asthma Check-in-----------------------------
