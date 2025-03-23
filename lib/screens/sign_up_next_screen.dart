@@ -221,7 +221,9 @@ class _SignUpNextScreenState extends State<SignUpNextScreen> {
         isPatientAdded || (dependents != null && dependents!.isNotEmpty);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           "Sign Up",
           style: TextStyle(

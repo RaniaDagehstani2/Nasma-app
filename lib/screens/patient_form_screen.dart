@@ -258,6 +258,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   void _savePatientData() async {
     if (!isValid) return;
     String currentDate = DateTime.now().toLocal().toString().split(' ')[0];
+    DatabaseReference treatmentRef = _database.child("TreatmentPlan").push();
+    String newTreatmentPlanId = treatmentRef.key ?? "";
+
+    await treatmentRef.set({
+      "isApproved": false,
+    });
     await _database.child("Patient").child(widget.userId).update({
       "Patient_ID": widget.userId,
       "Fname": widget.firstName,
@@ -267,7 +273,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           : "", // Store null if empty
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.isDependent ? widget.userId : "",
-      "Treatmentplan_ID": "",
+      "Treatmentplan_ID": newTreatmentPlanId,
       "rday": currentDate,
     });
 
@@ -305,7 +311,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           "Add Your Information",
           style: TextStyle(
@@ -398,6 +406,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 }).toList();
               },
               decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
                 labelText: "Select a Doctor",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -406,6 +416,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 errorText:
                     doctorError, // Error message if doctor is not selected
               ),
+              dropdownColor: Colors.white,
             ),
 
             const SizedBox(height: 20),

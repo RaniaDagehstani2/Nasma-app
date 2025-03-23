@@ -141,7 +141,12 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
     if (!isValid) return;
     String currentDate = DateTime.now().toLocal().toString().split(' ')[0];
     String dependentId = idController.text.trim();
+    DatabaseReference treatmentRef = _database.child("TreatmentPlan").push();
+    String newTreatmentPlanId = treatmentRef.key ?? "";
 
+    await treatmentRef.set({
+      "isApproved": false,
+    });
     await _database.child("Patient").child(dependentId).set({
       "Patient_ID": dependentId,
       "Fname": firstNameController.text.trim(),
@@ -151,7 +156,7 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
           : "", // ✅ Store empty string if phone is not entered
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.userId, // Set guardian to the current user
-      "Treatmentplan_ID": "", // Always empty
+      "Treatmentplan_ID": newTreatmentPlanId, // Always empty
       "rday": currentDate,
     });
 
@@ -166,7 +171,9 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           "Add Dependent",
           style: TextStyle(
@@ -251,6 +258,8 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
                 }).toList();
               },
               decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
                 labelText: "Select a Doctor",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -259,6 +268,8 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
                 errorText:
                     doctorError, // Error message if doctor is not selected
               ),
+              dropdownColor: Colors.white, // 🔥 Popup background
+              // 🔥 Arrow icon color
             ),
 
             const SizedBox(height: 20),

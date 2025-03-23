@@ -52,8 +52,10 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       // 🔹 App Bar (Header) - Same as Sign-In Page
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           "Reset Password",
           style: TextStyle(

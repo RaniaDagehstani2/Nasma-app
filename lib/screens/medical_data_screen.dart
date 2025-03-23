@@ -93,7 +93,9 @@ class _MedicalDataScreenState extends State<MedicalDataScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           "Medical Data",
           style: TextStyle(

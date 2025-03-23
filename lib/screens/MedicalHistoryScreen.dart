@@ -120,7 +120,9 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Medical History")),
+      backgroundColor: Colors.white,
+      appBar:
+          AppBar(backgroundColor: Colors.white, title: Text("Medical History")),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
