@@ -48,19 +48,19 @@ class _PatientListScreenState extends State<PatientListScreen> {
     DatabaseEvent patientEvent = await _database.child("Patient").once();
     var patientSnapshot = patientEvent.snapshot.value;
 
-    if (patientSnapshot == null || patientSnapshot is! List) {
+    if (patientSnapshot == null || patientSnapshot is! Map) {
       print("❌ No patients found in database.");
       return;
     }
 
-    List<dynamic> patientListRaw = patientSnapshot;
+    Map<dynamic, dynamic> patientListRaw = patientSnapshot;
     List<Map<String, dynamic>> patientList = [];
 
-    for (var entry in patientListRaw) {
-      if (entry == null || entry is! Map) continue;
+    patientListRaw.forEach((key, entry) async {
+      if (entry == null || entry is! Map) return;
 
       if (entry["Doctor_ID"].toString() == doctorId) {
-        String treatmentPlanId = entry["Treatmentplan_ID"] ?? "";
+        String treatmentPlanId = entry["TreatmentPlan_ID"] ?? "";
 
         // Fetch Treatment Plan Data
         DatabaseEvent treatmentPlanEvent = await _database
@@ -77,22 +77,22 @@ class _PatientListScreenState extends State<PatientListScreen> {
         bool isApproved = treatmentPlanData?["isApproved"] ?? false;
 
         patientList.add({
-          "id": entry["Patient_ID"].toString(),
+          "id": entry["Patient_ID"]?.toString() ?? key.toString(),
           "Fname": entry["Fname"] ?? "Unknown",
           "Lname": entry["Lname"] ?? "Unknown",
           "ACTst": actStatus,
           "ACT": actScore,
           "Is_Approve": isApproved,
         });
-      }
-    }
 
-    setState(() {
-      patients = patientList;
-      _applySorting();
+        setState(() {
+          patients = patientList;
+          _applySorting();
+        });
+      }
     });
 
-    print("✅ Patients found for Doctor ID $doctorId: ${patients.length}");
+    print("✅ Patients found for Doctor ID $doctorId: ${patientList.length}");
   }
 
   // void _applySorting() {

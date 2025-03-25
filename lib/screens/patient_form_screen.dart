@@ -273,7 +273,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           : "", // Store null if empty
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.isDependent ? widget.userId : "",
-      "Treatmentplan_ID": newTreatmentPlanId,
+      "TreatmentPlan_ID": newTreatmentPlanId,
       "rday": currentDate,
     });
 

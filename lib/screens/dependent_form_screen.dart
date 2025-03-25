@@ -156,7 +156,7 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
           : "", // ✅ Store empty string if phone is not entered
       "Doctor_ID": selectedDoctorId, // Required doctor selection
       "Guardian_ID": widget.userId, // Set guardian to the current user
-      "Treatmentplan_ID": newTreatmentPlanId, // Always empty
+      "TreatmentPlan_ID": newTreatmentPlanId, // Always empty
       "rday": currentDate,
     });
 
