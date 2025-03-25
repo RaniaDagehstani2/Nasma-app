@@ -11,6 +11,7 @@ import 'package:testtest/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+
 class HomeScreen extends StatefulWidget {
   final String userId; // ✅ Add this
 
@@ -27,7 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> treatmentPlans = [];
   String healthMessage = "My Asthma is Worsening";
   String healthImage = 'assets/face.png';
-
+  String selectedAffect = ""; // Track the selected affect level
+  String selectedSeverity = ""; // Track the selected severity
   String _doctorName = "Dr. Unknown";
   String _doctorHospital = "Unknown Hospital";
   String _doctorSpecialty = "Unknown Specialty";
@@ -149,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
         fetchDoctorDetails(users.first['Doctor_ID']);
         fetchTreatmentPlan(users.first['Patient_ID']);
         checkAndShowCheckIn(users.first['Patient_ID']);
+        listenForAlerts(patientId);
       } else {
         print("⚠️ No patients available to display.");
       }
@@ -156,7 +159,101 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   //
+//-----------------------------------------------------------------
+  void listenForAlerts(String patientId) {
+    if (patientId.isEmpty) {
+      print("⚠️ Patient ID is empty, cannot listen for alerts.");
+      return;
+    }
 
+    DatabaseReference alertsRef = FirebaseDatabase.instance
+        .ref()
+        .child('Patient')
+        .child(patientId)
+        .child('Alerts');
+
+    alertsRef.onChildAdded.listen((event) {
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> alertData =
+            Map<dynamic, dynamic>.from(event.snapshot.value as Map);
+        String message = alertData['message'] ?? "New alert received";
+        String timestamp = alertData['timestamp'] ?? DateTime.now().toString();
+
+        showAlert(message, timestamp);
+      }
+    });
+  }
+
+  /// Function to show an alert on the homepage
+  void showAlert(String message, String timestamp) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15), // Rounded edges
+          ),
+          elevation: 10, // Adds shadow for a modern look
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded,
+                  color: Colors.red, size: 30), // Emergency icon
+              SizedBox(width: 10),
+              Text(
+                "Emergency Alert",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.access_time, size: 16, color: Colors.grey),
+                  SizedBox(width: 5),
+                  Text(
+                    timestamp,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text("Dismiss"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+//--------------------------------------------------------------------
 //--------------------------------------------------------------------------
   Future<void> fetchDoctorDetails(String doctorId) async {
     print("Fetching doctor details for doctor ID: $doctorId");
@@ -181,11 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
-
-
-//----------------------------Furat----------------------------------------------
-     
 //----------------------------------------------------------------------------------------
 
   Future<void> fetchTreatmentPlan(String patientId) async {
@@ -398,55 +490,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 //-------------------------------------Emergncy------------------------------------
-  Future<void> showEmergencyNotification() async {
-    if (uid == null) {
-      print("User ID is null.");
-      return;
-    }
-
-    DatabaseReference alertRef = FirebaseDatabase.instance
-        .ref()
-        .child('Patient')
-        .child(uid!)
-        .child('Alert');
-
-    DatabaseEvent alertSnapshot = await alertRef.once();
-
-    if (alertSnapshot.snapshot.value != null) {
-      Map<String, dynamic> alertData =
-          Map<String, dynamic>.from(alertSnapshot.snapshot.value as Map);
-
-      // Example fields in Alert: type, message, timestamp
-      String alertType = alertData['type'] ?? 'Unknown Alert';
-      String alertMessage = alertData['message'] ?? 'Vital signs abnormal!';
-      String alertTime = alertData['timestamp'] ?? '';
-
-      print("🚨 Alert detected: $alertType - $alertMessage at $alertTime");
-
-      // Show notification using your NotificationService
-      NotificationService.showNotification(
-        id: 999, // Unique ID for this notification
-        title: "⚠️ Emergency Alert: $alertType",
-        body: alertMessage,
-      );
-
-      // Optional: Show SnackBar as well
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "🚨 Alert: $alertType - $alertMessage",
-              style: TextStyle(fontSize: 16),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
-    } else {
-      print("✅ No active alerts found for patient.");
-    }
+  /* Future<void> showEmergencyNotification() async {
+  if (patientId.isEmpty) {
+    print("Patient ID is empty.");
+    return;
   }
+
+  // Fetch the patient's alert data using their patient ID
+  DatabaseReference alertRef = FirebaseDatabase.instance
+      .ref()
+      .child('Patient')
+      .child(patientId)  // Use patientId, not uid, to fetch alerts
+      .child('Alert');
+
+  DatabaseEvent alertSnapshot = await alertRef.once();
+
+  if (alertSnapshot.snapshot.value != null) {
+    Map<String, dynamic> alertData =
+        Map<String, dynamic>.from(alertSnapshot.snapshot.value as Map);
+
+    // Example fields in Alert: type, message, timestamp
+    String alertType = alertData['type'] ?? 'Unknown Alert';
+    String alertMessage = alertData['message'] ?? 'Vital signs abnormal!';
+    String alertTime = alertData['timestamp'] ?? '';
+
+    print("🚨 Alert detected for patient: $alertType - $alertMessage at $alertTime");
+
+    // Show notification to the patient using your NotificationService
+    NotificationService.showNotification(
+      id: 999, // Unique ID for this notification
+      title: "⚠️ Emergency Alert: $alertType",
+      body: alertMessage,
+    );
+
+    // Optional: Show SnackBar to inform the patient
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "🚨 Alert: $alertType - $alertMessage",
+            style: TextStyle(fontSize: 16),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    });
+  } else {
+    print("✅ No active alerts found for patient.");
+  }
+}
+*/
 
 //---------------------------------------------------------------
 
@@ -455,14 +549,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> checkAndShowCheckIn(String patientID) async {
     if (patientID == null) return;
 
-    DatabaseReference databaseRef =
+    DatabaseReference patientRef =
+        FirebaseDatabase.instance.ref().child("Patient").child(patientID);
+    DatabaseReference questionsRef =
         FirebaseDatabase.instance.ref().child("Questions");
 
-    DatabaseEvent snapshot = await databaseRef.once();
+    // Fetch patient data
+    DataSnapshot patientSnapshot = await patientRef.get();
+    if (patientSnapshot.exists) {
+      Map<String, dynamic> patientData =
+          Map<String, dynamic>.from(patientSnapshot.value as Map);
 
-    if (snapshot.snapshot.value != null) {
+      // Fetch the registration date (rday) for the patient
+      String registrationDateString = patientData['rday'];
+      DateTime registrationDate = DateTime.parse(registrationDateString);
+
+      // Check if today is the end of the month
+      DateTime today = DateTime.now();
+      DateTime lastDayOfMonth = DateTime(today.year, today.month + 1, 0);
+      if (registrationDate.month == today.month &&
+          registrationDate.year == today.year &&
+          today != lastDayOfMonth) {
+        print("❌ Not the end of the month yet.");
+        return;
+      }
+    }
+
+    // Fetch questions data
+    DataSnapshot questionsSnapshot = await questionsRef.get();
+    if (questionsSnapshot.exists) {
       Map<dynamic, dynamic> questions =
-          Map<dynamic, dynamic>.from(snapshot.snapshot.value as Map);
+          Map<dynamic, dynamic>.from(questionsSnapshot.value as Map);
 
       DateTime now = DateTime.now();
 
@@ -474,7 +591,6 @@ class _HomeScreenState extends State<HomeScreen> {
             questionData.containsKey("date")) {
           DateTime lastCheckIn = DateTime.parse(questionData["date"]);
 
-          // 🎯 If the last check-in was in the same month and year, do NOT show again
           if (lastCheckIn.year == now.year && lastCheckIn.month == now.month) {
             print(
                 "✅ Patient $patientID already checked in this month. Skipping.");
@@ -484,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // 🎯 Show the check-in if not done this month
+    // Show the check-in form
     _showCheckInDialog(patientID);
   }
 
@@ -527,14 +643,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildOption("Very affected", "😟", Colors.red, true,
-                              buttonWidth, buttonHeight),
+                          _buildClickableButton("Very affected", "😟",
+                              Colors.red, true, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildOption("Slightly affected", "😐", Colors.yellow,
-                              true, buttonWidth, buttonHeight),
+                          _buildClickableButton("Slightly affected", "😐",
+                              Colors.yellow, true, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildOption("Not affected", "😊", Colors.blue, true,
-                              buttonWidth, buttonHeight),
+                          _buildClickableButton("Not affected", "😊",
+                              Colors.blue, true, buttonWidth, buttonHeight),
                         ],
                       ),
                     ),
@@ -547,14 +663,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildOption("Very severe", "😟", Colors.red, false,
-                              buttonWidth, buttonHeight),
+                          _buildClickableButton("Very severe", "😟", Colors.red,
+                              false, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildOption("Mild", "😐", Colors.yellow, false,
-                              buttonWidth, buttonHeight),
+                          _buildClickableButton("Mild", "😐", Colors.yellow,
+                              false, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildOption("Not severe", "😊", Colors.blue, false,
-                              buttonWidth, buttonHeight),
+                          _buildClickableButton("Not severe", "😊", Colors.blue,
+                              false, buttonWidth, buttonHeight),
                         ],
                       ),
                     ),
@@ -573,10 +689,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding:
                             EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
-                      child: Text(
-                        "Submit",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
+                      child: Text("Submit",
+                          style: TextStyle(color: Colors.white, fontSize: 16)),
                     ),
                   ],
                 ),
@@ -588,76 +702,90 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-// Updated _buildOption function to change color on selection
-  Widget _buildOption(String label, String emoji, Color color, bool isActivity,
-      double width, double height) {
+  Widget _buildClickableButton(String label, String emoji, Color color,
+      bool isActivity, double width, double height) {
     bool isSelected =
         isActivity ? _selectedActivity == label : _selectedBreath == label;
-    bool isHovered = false; // متغير لتتبع حالة التحويم
+
+    // Variable to track button press state
+    bool isPressed = false;
 
     return StatefulBuilder(
       builder: (context, setState) {
-        return MouseRegion(
-          onEnter: (_) => setState(() => isHovered = true), // عندما يدخل الماوس
-          onExit: (_) => setState(() => isHovered = false), // عندما يخرج الماوس
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                if (isActivity) {
-                  _selectedActivity = label == "Very affected"
-                      ? "High Limitation"
-                      : label == "Slightly affected"
-                          ? "Moderate Limitation"
-                          : "No Limitation";
-                } else {
-                  _selectedBreath = label == "Very severe"
-                      ? "Severe"
-                      : label == "Mild"
-                          ? "Moderate"
-                          : "None";
-                }
-              });
-            },
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
+        return GestureDetector(
+          onTapDown: (_) {
+            // Change the color when the button is pressed
+            setState(() {
+              isPressed = true;
+            });
+          },
+          onTapUp: (_) {
+            // Revert the color when the press is released
+            setState(() {
+              isPressed = false;
+            });
+          },
+          onTapCancel: () {
+            // Revert the color if the tap is canceled
+            setState(() {
+              isPressed = false;
+            });
+          },
+          onTap: () {
+            setState(() {
+              // Update the selected state when the button is tapped
+              if (isActivity) {
+                _selectedActivity = label;
+              } else {
+                _selectedBreath = label;
+              }
+            });
+          },
+          child: AnimatedContainer(
+            duration: Duration(
+                milliseconds: 150), // Shorter transition for immediate response
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: isPressed
+                  ? color.withOpacity(
+                      0.6) // Color when pressed down (lighter opacity)
+                  : isSelected
+                      ? color.withOpacity(0.8) // Color when selected
+                      : color.withOpacity(0.4), // Normal state color
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
                 color: isSelected
-                    ? color.withOpacity(0.8) // لون أقوى عند التحديد
-                    : isHovered
-                        ? color.withOpacity(0.6) // لون متوسط عند مرور الماوس
-                        : color.withOpacity(
-                            0.4), // لون عادي عند عدم التحديد أو التحويم
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: isSelected ? Colors.black : Colors.transparent,
-                    width: 2),
-                boxShadow: isSelected || isHovered
-                    ? [
-                        BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            spreadRadius: 2)
-                      ]
-                    : [],
+                    ? Colors.black
+                    : Colors.transparent, // Border color when selected
+                width: 2,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(emoji, style: TextStyle(fontSize: height * 0.35)),
-                  SizedBox(height: 4),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: height * 0.14,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.black26, // Shadow when selected
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : [],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: TextStyle(fontSize: height * 0.35)),
+                SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: height * 0.14,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal, // Bold when selected
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -694,7 +822,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       // 🎯 Show emergency notification after submission
-      showEmergencyNotification();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please select an option for both questions.")),
@@ -784,6 +911,7 @@ class _HomeScreenState extends State<HomeScreen> {
               checkAndShowCheckIn(patientId!);
               fetchTreatmentPlan(patientId!);
               fetchDoctorDetails(doctorId);
+              listenForAlerts(patientId);
             });
 
             print("✅ Selected Patient ID: $patientId"); // Debugging log
