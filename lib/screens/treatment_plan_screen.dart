@@ -237,7 +237,9 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => HealthDashboard()),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            HealthDashboard(patientId: widget.patientId)),
                   );
                 },
                 child: Text(
