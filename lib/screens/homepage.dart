@@ -52,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     print("✅ User ID received in HomeScreen: $uid");
     fetchUserData();
     WidgetsBinding.instance.addPostFrameCallback((_) {});
+    _checkAndShowAlert(); // Call function to check if alert should be shown
   }
 
 //------------------------------------------------------------------------------
@@ -158,9 +159,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _checkAndShowAlert() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hasShownAlert = prefs.getBool('hasShownAlert') ?? false;
+
+    if (!hasShownAlert) {
+      showAlert("Welcome!", "This is your first visit to the page.");
+      await prefs.setBool('hasShownAlert', true); // Mark alert as shown
+    }
+  }
+
   //
 //-----------------------------------------------------------------
-  void listenForAlerts(String patientId) {
+
+  void listenForAlerts(String patientId) async {
     if (patientId.isEmpty) {
       print("⚠️ Patient ID is empty, cannot listen for alerts.");
       return;
@@ -172,14 +184,49 @@ class _HomeScreenState extends State<HomeScreen> {
         .child(patientId)
         .child('Alerts');
 
+    // First, check for existing unseen alerts
+    alertsRef.once().then((snapshot) {
+      if (snapshot.snapshot.value != null) {
+        Map<dynamic, dynamic> alerts =
+            Map<dynamic, dynamic>.from(snapshot.snapshot.value as Map);
+
+        alerts.forEach((key, alertData) {
+          if (alertData is Map<dynamic, dynamic>) {
+            String message = alertData['message'] ?? "New alert received";
+            String timestamp =
+                alertData['timestamp'] ?? DateTime.now().toString();
+            bool isSeen = alertData['seen'] ?? false;
+
+            if (!isSeen) {
+              showAlert(message, timestamp);
+              alertsRef.child(key).update({'seen': true}).then((_) {
+                print("✅ Alert marked as seen in Firebase.");
+              }).catchError((error) {
+                print("❌ Error updating alert status: $error");
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // Listen for new alerts
     alertsRef.onChildAdded.listen((event) {
       if (event.snapshot.value != null) {
         Map<dynamic, dynamic> alertData =
             Map<dynamic, dynamic>.from(event.snapshot.value as Map);
         String message = alertData['message'] ?? "New alert received";
         String timestamp = alertData['timestamp'] ?? DateTime.now().toString();
+        bool isSeen = alertData['seen'] ?? false;
 
-        showAlert(message, timestamp);
+        if (!isSeen) {
+          showAlert(message, timestamp);
+          event.snapshot.ref.update({'seen': true}).then((_) {
+            print("✅ Alert marked as seen in Firebase.");
+          }).catchError((error) {
+            print("❌ Error updating alert status: $error");
+          });
+        }
       }
     });
   }
