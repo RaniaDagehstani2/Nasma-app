@@ -21,8 +21,6 @@ class _HealthDashboardState extends State<HealthDashboard> {
       FirebaseDatabase.instance.ref().child('CollectingData');
   final DatabaseReference _snapshotsRef =
       FirebaseDatabase.instance.ref().child('Snapshots');
-  final DatabaseReference _treatmentPlanRef =
-      FirebaseDatabase.instance.ref().child('TreatmentPlan');
   final DatabaseReference _patientRef =
       FirebaseDatabase.instance.ref().child('Patient');
   final DatabaseReference _sleepResultRef =
@@ -50,9 +48,7 @@ class _HealthDashboardState extends State<HealthDashboard> {
 
   Future<void> _initializeData() async {
     await _fetchPatient1Info();
-    if (treatmentPlanId != null) {
-      await _fetchACTScore(treatmentPlanId!);
-    }
+    await _fetchACTScoreFromSnapshots(); // ✅ NEW: Fetch from Snapshots instead
     await _fetchMedicalHistoryFromPatient();
     setState(() {});
   }
@@ -73,29 +69,59 @@ class _HealthDashboardState extends State<HealthDashboard> {
     }
   }
 
-  Future<void> _fetchACTScore(String treatmentPlanId) async {
-    final treatmentSnapshot =
-        await _treatmentPlanRef.child(treatmentPlanId).get();
-    if (treatmentSnapshot.exists) {
-      final treatmentData =
-          Map<String, dynamic>.from(treatmentSnapshot.value as Map);
+  Future<void> _fetchACTScoreFromSnapshots() async {
+    final actRef = _snapshotsRef.child(widget.patientId).child('ACT');
+    final snapshot = await actRef.get();
 
-      String lastUpdatedStr = treatmentData['lastUpdated']?.toString() ?? '';
-      if (shouldIncludeTime(lastUpdatedStr)) {
-        double act = double.tryParse(treatmentData['ACT'].toString()) ?? 0;
-        int roundedAct = act.round();
+    if (snapshot.exists) {
+      final Map<String, dynamic> actData =
+          Map<String, dynamic>.from(snapshot.value as Map);
+
+      // Determine the offset based on selectedMonth
+      int offset = 0;
+      switch (selectedMonth) {
+        case '1 Month Ago':
+          offset = 1;
+          break;
+        case '2 Months Ago':
+          offset = 2;
+          break;
+        case '3 Months Ago':
+          offset = 3;
+          break;
+        default:
+          offset = 0;
+      }
+
+      // Calculate the target month and year
+      DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
+
+      // Filter entries for selected month
+      final filteredEntries = actData.entries.where((e) {
+        int? ts = int.tryParse(e.key);
+        if (ts == null) return false;
+        DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+        return date.year == targetDate.year && date.month == targetDate.month;
+      }).toList();
+
+      if (filteredEntries.isNotEmpty) {
+        filteredEntries
+            .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
+        final latestACT =
+            int.tryParse(filteredEntries.first.value.toString()) ?? 0;
+
         setState(() {
-          actScore = roundedAct;
-          actIcon = roundedAct >= 20
+          actScore = latestACT;
+          actIcon = latestACT >= 20
               ? Icons.emoji_emotions
               : Icons.sentiment_dissatisfied;
-          actIconColor = roundedAct >= 20
+          actIconColor = latestACT >= 20
               ? const Color.fromARGB(255, 252, 252, 252)
               : const Color.fromARGB(255, 253, 253, 253);
         });
       } else {
         setState(() {
-          actScore = null; // Hide or show 'No ACT data for this month'
+          actScore = null; // No ACT score for this month
         });
       }
     }
@@ -149,9 +175,8 @@ class _HealthDashboardState extends State<HealthDashboard> {
 
   Future<Map<String, double>> _fetchMetricData(String metric) async {
     Map<String, double> dataMap = {};
-    if (collectingDataKey == null) return dataMap;
-
     int offset = 0;
+
     switch (selectedMonth) {
       case 'This Month':
         offset = 0;
@@ -177,14 +202,16 @@ class _HealthDashboardState extends State<HealthDashboard> {
     }
 
     final snapshot =
-        await _snapshotsRef.child(collectingDataKey!).child(metric).get();
+        await _snapshotsRef.child(widget.patientId).child(metric).get();
 
     if (snapshot.exists) {
       final data = Map<String, dynamic>.from(snapshot.value as Map);
       Map<String, List<double>> tempData = {};
 
       data.forEach((timeKey, value) {
-        DateTime dateTime = DateTime.tryParse(timeKey) ?? DateTime.now();
+        int timestamp = int.tryParse(timeKey) ?? 0;
+        DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+
         if (dateTime.year == targetDate.year &&
             dateTime.month == targetDate.month) {
           String dateLabel = DateFormat('dd/MM').format(dateTime);
@@ -271,22 +298,41 @@ class _HealthDashboardState extends State<HealthDashboard> {
 
   Future<int> _fetchTotalWakeupsByPatientID() async {
     int totalWakeups = 0;
-    final snapshot = await _collectingDataRef.get();
+
+    final snapshot =
+        await _snapshotsRef.child(widget.patientId).child('sleepPattern').get();
 
     if (snapshot.exists) {
       final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+      int offset = 0;
+      switch (selectedMonth) {
+        case '1 Month Ago':
+          offset = 1;
+          break;
+        case '2 Months Ago':
+          offset = 2;
+          break;
+        case '3 Months Ago':
+          offset = 3;
+          break;
+        default:
+          offset = 0;
+      }
+
+      DateTime targetDate = DateTime(_now.year, _now.month - offset);
+
       for (var entry in data.entries) {
-        final entryData = Map<String, dynamic>.from(entry.value);
-        if (entryData['patient_ID']?.toString() == widget.patientId) {
-          String? timeStr = entryData['timestamp']?.toString();
-          if (timeStr != null && shouldIncludeTime(timeStr)) {
-            int wake =
-                int.tryParse(entryData['sleepPattern']?.toString() ?? '0') ?? 0;
-            totalWakeups += wake;
+        int? ts = int.tryParse(entry.key);
+        if (ts != null) {
+          DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+          if (date.year == targetDate.year && date.month == targetDate.month) {
+            totalWakeups += int.tryParse(entry.value.toString()) ?? 0;
           }
         }
       }
     }
+
     return totalWakeups;
   }
 
@@ -294,22 +340,41 @@ class _HealthDashboardState extends State<HealthDashboard> {
   ///----------------Cough totla ----------------------------
   Future<int> _fetchTotalCoughsByPatientID() async {
     int totalCoughs = 0;
-    final snapshot = await _collectingDataRef.get();
+
+    final snapshot =
+        await _snapshotsRef.child(widget.patientId).child('totalcough').get();
 
     if (snapshot.exists) {
       final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+      int offset = 0;
+      switch (selectedMonth) {
+        case '1 Month Ago':
+          offset = 1;
+          break;
+        case '2 Months Ago':
+          offset = 2;
+          break;
+        case '3 Months Ago':
+          offset = 3;
+          break;
+        default:
+          offset = 0;
+      }
+
+      DateTime targetDate = DateTime(_now.year, _now.month - offset);
+
       for (var entry in data.entries) {
-        final entryData = Map<String, dynamic>.from(entry.value);
-        if (entryData['patient_ID']?.toString() == widget.patientId) {
-          String? timeStr = entryData['timestamp']?.toString();
-          if (timeStr != null && shouldIncludeTime(timeStr)) {
-            int cough =
-                int.tryParse(entryData['totalcough']?.toString() ?? '0') ?? 0;
-            totalCoughs += cough;
+        int? ts = int.tryParse(entry.key);
+        if (ts != null) {
+          DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+          if (date.year == targetDate.year && date.month == targetDate.month) {
+            totalCoughs += int.tryParse(entry.value.toString()) ?? 0;
           }
         }
       }
     }
+
     return totalCoughs;
   }
 
