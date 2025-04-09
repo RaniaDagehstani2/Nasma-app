@@ -86,10 +86,13 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/standalone.dart' as tz;
 
 class NotificationService {
+  static late String _currentPatientId; // ✅ Add this
+
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> initialize() async {
+  static Future<void> initialize(String patientId) async {
+    _currentPatientId = patientId;
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Riyadh')); // ✅ Set Riyadh Timezone
 

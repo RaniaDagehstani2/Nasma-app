@@ -23,11 +23,81 @@ class _PatientListScreenState extends State<PatientListScreen> {
     _fetchDoctorPatients();
   }
 
+  // void _fetchDoctorPatients() async {
+  //   User? user = _auth.currentUser;
+  //   if (user == null) return;
+
+  //   // Fetch Doctor List
+  //   DatabaseEvent doctorEvent = await _database.child("Doctor").once();
+  //   Map<dynamic, dynamic>? doctorData =
+  //       doctorEvent.snapshot.value as Map<dynamic, dynamic>?;
+
+  //   if (doctorData != null) {
+  //     doctorData.forEach((key, value) {
+  //       if (value["email"] == user.email) {
+  //         setState(() {
+  //           doctorId = key;
+  //         });
+  //       }
+  //     });
+  //   }
+
+  //   if (doctorId == null) return;
+
+  //   // Fetch Patients assigned to this doctor
+  //   DatabaseEvent patientEvent = await _database.child("Patient").once();
+  //   var patientSnapshot = patientEvent.snapshot.value;
+
+  //   if (patientSnapshot == null || patientSnapshot is! Map) {
+  //     print("❌ No patients found in database.");
+  //     return;
+  //   }
+
+  //   Map<dynamic, dynamic> patientListRaw = patientSnapshot;
+  //   List<Map<String, dynamic>> patientList = [];
+
+  //   patientListRaw.forEach((key, entry) async {
+  //     if (entry == null || entry is! Map) return;
+
+  //     if (entry["Doctor_ID"].toString() == doctorId) {
+  //       String treatmentPlanId = entry["TreatmentPlan_ID"] ?? "";
+  //       // Fetch Treatment Plan Data
+  //       DatabaseEvent treatmentPlanEvent = await _database
+  //           .child("TreatmentPlan")
+  //           .child(treatmentPlanId)
+  //           .once();
+  //       var treatmentPlanSnapshot = treatmentPlanEvent.snapshot.value;
+
+  //       Map<dynamic, dynamic>? treatmentPlanData =
+  //           treatmentPlanSnapshot is Map ? treatmentPlanSnapshot : null;
+
+  //       String actStatus = treatmentPlanData?["ACTst"] ?? "";
+  //       String actScore = treatmentPlanData?["ACT"]?.toString() ?? "";
+  //       bool isApproved = treatmentPlanData?["isApproved"] ?? false;
+
+  //       patientList.add({
+  //         "id": entry["Patient_ID"]?.toString() ?? key.toString(),
+  //         "Fname": entry["Fname"] ?? "Unknown",
+  //         "Lname": entry["Lname"] ?? "Unknown",
+  //         "ACTst": actStatus,
+  //         "ACT": actScore,
+  //         "Is_Approve": isApproved,
+  //       });
+
+  //       setState(() {
+  //         patients = patientList;
+  //         _applySorting();
+  //       });
+  //     }
+  //   });
+
+  //   print("✅ Patients found for Doctor ID $doctorId: ${patientList.length}");
+  // }
   void _fetchDoctorPatients() async {
     User? user = _auth.currentUser;
     if (user == null) return;
 
-    // Fetch Doctor List
+    // 🔍 Step 1: Get Doctor ID by email
     DatabaseEvent doctorEvent = await _database.child("Doctor").once();
     Map<dynamic, dynamic>? doctorData =
         doctorEvent.snapshot.value as Map<dynamic, dynamic>?;
@@ -35,80 +105,106 @@ class _PatientListScreenState extends State<PatientListScreen> {
     if (doctorData != null) {
       doctorData.forEach((key, value) {
         if (value["email"] == user.email) {
-          setState(() {
-            doctorId = key;
-          });
+          doctorId = key;
         }
       });
     }
 
-    if (doctorId == null) return;
+    if (doctorId == null) {
+      print("❌ Doctor ID not found for ${user.email}");
+      return;
+    }
 
-    // Fetch Patients assigned to this doctor
+    // 🧾 Step 2: Get Patients list
     DatabaseEvent patientEvent = await _database.child("Patient").once();
     var patientSnapshot = patientEvent.snapshot.value;
 
-    if (patientSnapshot == null || patientSnapshot is! Map) {
+    if (patientSnapshot == null) {
       print("❌ No patients found in database.");
       return;
     }
 
-    Map<dynamic, dynamic> patientListRaw = patientSnapshot;
     List<Map<String, dynamic>> patientList = [];
 
-    patientListRaw.forEach((key, entry) async {
-      if (entry == null || entry is! Map) return;
+    // ✅ Case 1: Patient stored as List (like [null, {...}, {...}])
+    if (patientSnapshot is List) {
+      for (var entry in patientSnapshot) {
+        if (entry == null || entry is! Map) continue;
 
-      if (entry["Doctor_ID"].toString() == doctorId) {
-        String treatmentPlanId = entry["TreatmentPlan_ID"] ?? "";
+        if (entry["Doctor_ID"].toString() == doctorId) {
+          String treatmentPlanId = entry["TreatmentPlan_ID"] ?? "";
 
-        // Fetch Treatment Plan Data
-        DatabaseEvent treatmentPlanEvent = await _database
-            .child("TreatmentPlan")
-            .child(treatmentPlanId)
-            .once();
-        var treatmentPlanSnapshot = treatmentPlanEvent.snapshot.value;
+          // Fetch Treatment Plan
+          DatabaseEvent treatmentEvent = await _database
+              .child("TreatmentPlan")
+              .child(treatmentPlanId)
+              .once();
 
-        Map<dynamic, dynamic>? treatmentPlanData =
-            treatmentPlanSnapshot is Map ? treatmentPlanSnapshot : null;
+          var plan = treatmentEvent.snapshot.value;
+          Map? planData = plan is Map ? plan : null;
 
-        String actStatus = treatmentPlanData?["ACTst"] ?? "";
-        String actScore = treatmentPlanData?["ACT"]?.toString() ?? "";
-        bool isApproved = treatmentPlanData?["isApproved"] ?? false;
-
-        patientList.add({
-          "id": entry["Patient_ID"]?.toString() ?? key.toString(),
-          "Fname": entry["Fname"] ?? "Unknown",
-          "Lname": entry["Lname"] ?? "Unknown",
-          "ACTst": actStatus,
-          "ACT": actScore,
-          "Is_Approve": isApproved,
-        });
-
-        setState(() {
-          patients = patientList;
-          _applySorting();
-        });
+          patientList.add({
+            // "id": entry["Patient_ID"]?.toString() ?? "",
+            "id": patientSnapshot.indexOf(entry).toString(),
+            "Fname": entry["Fname"] ?? "Unknown",
+            "Lname": entry["Lname"] ?? "Unknown",
+            "ACTst": planData?["ACTst"] ?? "",
+            "ACT": planData?["ACT"]?.toString() ?? "",
+            "Is_Approve": planData?["isApproved"] ?? false,
+          });
+        }
       }
-    });
+    }
 
-    print("✅ Patients found for Doctor ID $doctorId: ${patientList.length}");
+    // ✅ Case 2: Patient stored as Map (like {"1": {...}, "2": {...}})
+    else if (patientSnapshot is Map) {
+      patientSnapshot.forEach((key, entry) async {
+        if (entry == null || entry is! Map) return;
+
+        if (entry["Doctor_ID"].toString() == doctorId) {
+          String treatmentPlanId = entry["TreatmentPlan_ID"] ?? "";
+
+          // Fetch Treatment Plan
+          DatabaseEvent treatmentEvent = await _database
+              .child("TreatmentPlan")
+              .child(treatmentPlanId)
+              .once();
+
+          var plan = treatmentEvent.snapshot.value;
+          Map? planData = plan is Map ? plan : null;
+
+          patientList.add({
+            // "id": entry["Patient_ID"]?.toString() ?? key.toString(),
+            "id": key.toString(),
+            "Fname": entry["Fname"] ?? "Unknown",
+            "Lname": entry["Lname"] ?? "Unknown",
+            "ACTst": planData?["ACTst"] ?? "",
+            "ACT": planData?["ACT"]?.toString() ?? "",
+            "Is_Approve": planData?["isApproved"] ?? false,
+          });
+
+          setState(() {
+            patients = patientList;
+            _applySorting();
+          });
+        }
+      });
+    } else {
+      print("❌ Unexpected format for Patient data.");
+      return;
+    }
+
+    // Final update if list was built via for-loop (List case)
+    if (patientSnapshot is List) {
+      setState(() {
+        patients = patientList;
+        _applySorting();
+      });
+    }
+
+    print("✅ Patients found for Doctor ID $doctorId: ${patients.length}");
   }
 
-  // void _applySorting() {
-  //   if (currentFilter == "Need Approve") {
-  //     patients.sort((a, b) => a["Is_Approve"] == false ? -1 : 1);
-  //   } else if (currentFilter == "Status") {
-  //     patients.sort((a, b) => a["ACT"].compareTo(b["ACT"]));
-  //   } else {
-  //     patients.sort((a, b) {
-  //       String nameA = "${a["Fname"]} ${a["Lname"]}".toLowerCase();
-  //       String nameB = "${b["Fname"]} ${b["Lname"]}".toLowerCase();
-  //       return nameA.compareTo(nameB);
-  //     });
-  //   }
-  //   setState(() {});
-  // }
   void _applySorting() {
     if (currentFilter == "Need Approve") {
       patients.sort((a, b) {
@@ -186,7 +282,9 @@ class _PatientListScreenState extends State<PatientListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         toolbarHeight: 100,
         title: const Text(
           "Patient List",
@@ -254,6 +352,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
                       itemBuilder: (context, index) {
                         final patient = patients[index];
                         return Card(
+                          color: Colors.white,
                           elevation: 2,
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           child: ListTile(
