@@ -219,8 +219,11 @@ class _PatientListScreenState extends State<PatientListScreen> {
         if (!aHasNoPlan && bHasNoPlan) return -1;
 
         // ✅ Move "Approved" before "Need Approve"
-        if (!aNeedsApproval && bNeedsApproval) return -1;
-        if (aNeedsApproval && !bNeedsApproval) return 1;
+        // if (!aNeedsApproval && bNeedsApproval) return -1;
+        // if (aNeedsApproval && !bNeedsApproval) return 1;
+// ✅ Move "Need Approve" before "Approved"
+        if (aNeedsApproval && !bNeedsApproval) return -1;
+        if (!aNeedsApproval && bNeedsApproval) return 1;
 
         // ✅ Sorting by ACT Status (Red → Yellow → Green)
         List<String> priorityOrder = [

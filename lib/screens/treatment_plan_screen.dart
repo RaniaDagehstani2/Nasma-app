@@ -621,6 +621,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
 
       String fullName = "${patientData['Fname']} ${patientData['Lname']}";
       int fetchedAge = _calculateAge(patientData['Date_of_birth']);
+      // String? treatmentPlanId = patientData['TreatmentPlan_ID'];
       String? treatmentPlanId = patientData['TreatmentPlan_ID'];
 
       if (treatmentPlanId == null) return;
@@ -632,19 +633,26 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       if (!treatmentSnapshot.exists) return;
       var treatmentData = treatmentSnapshot.value as Map;
       String stepNum = treatmentData['stepNum'] ?? '';
+      debugPrint("🧪 Step Num: $stepNum");
       if (stepNum.isEmpty) return;
 
       DataSnapshot stepSnapshot =
           await _databaseRef.child('MedicalStep').child(stepNum).get();
 
       if (stepSnapshot.value == null || stepSnapshot.value is! Map) return;
+      if (stepSnapshot.value == null) {
+        debugPrint("❌ Step not found for stepNum: $stepNum");
+        return;
+      }
 
       var stepData = Map<String, dynamic>.from(stepSnapshot.value as Map);
 
       setState(() {
         patientName = fullName;
         age = fetchedAge;
-        actScore = treatmentData['ACT'] ?? 0;
+        actScore = (treatmentData['ACT'] ?? 0)
+            .toDouble()
+            .round(); // or use toStringAsFixed(1) if you want 1 decimal
 
         // ✅ Extract plans
         mainPlan = {
@@ -657,11 +665,13 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
 
         altPlan = {
           'MedicationName1': stepData['MedicationName']?['AltName1'] ?? '',
-          'MedicationName2': stepData['MedicationName']?['AltName2'] ?? '',
+          'MedicationName2': stepData['MedicationName']?['AltName2'] ??
+              '', // <== could be null!
           'Dosage1': stepData['Dosage']?['AltInhale1'] ?? '',
-          'Dosage2': stepData['Dosage']?['AltInhale2'] ?? '',
-          'Frequency1': stepData['Frequency']?['AltFreq1'] ?? '',
-          'Frequency2': stepData['Frequency']?['AltFreq2'] ?? '',
+          'Dosage2':
+              stepData['Dosage']?['AltInhale2']?.toString() ?? '', // safe
+          'Frequency1': stepData['Frequency']?['AltFreq1']?.toString() ?? '',
+          'Frequency2': stepData['Frequency']?['AltFreq2']?.toString() ?? '',
         };
 
         // ✅ Setup controllers for plan fields
@@ -829,14 +839,16 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       ));
     }
 
-    if (altPlan['MedicationName2'].toString().isNotEmpty) {
+    if ((altPlan['MedicationName2'] ?? '').toString().isNotEmpty ||
+        (altPlan['Dosage2'] ?? '').toString().isNotEmpty ||
+        (altPlan['Frequency2'] ?? '').toString().isNotEmpty) {
       options.add(_buildPlanOption(
         "alt2",
-        nameControllers1['alt2'] ?? TextEditingController(),
-        nameControllers2['alt2'] ?? TextEditingController(),
-        dosageControllers1['alt2'] ?? TextEditingController(),
-        dosageControllers2['alt2'] ?? TextEditingController(),
-        frequencyControllers['alt2'] ?? TextEditingController(),
+        nameControllers1['alt2'] ??= TextEditingController(),
+        nameControllers2['alt2'] ??= TextEditingController(),
+        dosageControllers1['alt2'] ??= TextEditingController(),
+        dosageControllers2['alt2'] ??= TextEditingController(),
+        frequencyControllers['alt2'] ??= TextEditingController(),
       ));
     }
 

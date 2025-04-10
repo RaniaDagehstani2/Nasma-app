@@ -30,6 +30,8 @@ class _HealthDashboardState extends State<HealthDashboard> {
   String? collectingDataKey;
   String? treatmentPlanId;
   String selectedMonth = 'This Month';
+  String? snapshotKeyPatient;
+  String? snapshotKeyTreatment;
 
   int? actScore;
   IconData actIcon = Icons.sentiment_neutral;
@@ -63,67 +65,124 @@ class _HealthDashboardState extends State<HealthDashboard> {
           // dynamic patient id ---------------------
           collectingDataKey = entry.key;
           treatmentPlanId = entryData['treatmentPlan_ID']?.toString();
+          // ✅ Store both keys
+          snapshotKeyPatient = widget.patientId;
+          snapshotKeyTreatment = treatmentPlanId;
           break;
         }
       }
     }
   }
 
+  // Future<void> _fetchACTScoreFromSnapshots() async {
+  //   final actRef = _snapshotsRef.child(widget.patientId).child('ACT');
+  //   final snapshot = await actRef.get();
+
+  //   if (snapshot.exists) {
+  //     final Map<String, dynamic> actData =
+  //         Map<String, dynamic>.from(snapshot.value as Map);
+
+  //     // Determine the offset based on selectedMonth
+  //     int offset = 0;
+  //     switch (selectedMonth) {
+  //       case '1 Month Ago':
+  //         offset = 1;
+  //         break;
+  //       case '2 Months Ago':
+  //         offset = 2;
+  //         break;
+  //       case '3 Months Ago':
+  //         offset = 3;
+  //         break;
+  //       default:
+  //         offset = 0;
+  //     }
+
+  //     // Calculate the target month and year
+  //     DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
+
+  //     // Filter entries for selected month
+  //     final filteredEntries = actData.entries.where((e) {
+  //       int? ts = int.tryParse(e.key);
+  //       if (ts == null) return false;
+  //       DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+  //       return date.year == targetDate.year && date.month == targetDate.month;
+  //     }).toList();
+
+  //     if (filteredEntries.isNotEmpty) {
+  //       filteredEntries
+  //           .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
+  //       final latestACT =
+  //           int.tryParse(filteredEntries.first.value.toString()) ?? 0;
+
+  //       setState(() {
+  //         actScore = latestACT;
+  //         actIcon = latestACT >= 20
+  //             ? Icons.emoji_emotions
+  //             : Icons.sentiment_dissatisfied;
+  //         actIconColor = latestACT >= 20
+  //             ? const Color.fromARGB(255, 252, 252, 252)
+  //             : const Color.fromARGB(255, 253, 253, 253);
+  //       });
+  //     } else {
+  //       setState(() {
+  //         actScore = null; // No ACT score for this month
+  //       });
+  //     }
+  //   }
+  // }
   Future<void> _fetchACTScoreFromSnapshots() async {
-    final actRef = _snapshotsRef.child(widget.patientId).child('ACT');
-    final snapshot = await actRef.get();
+    Map<String, dynamic> mergedACT = {};
 
-    if (snapshot.exists) {
-      final Map<String, dynamic> actData =
-          Map<String, dynamic>.from(snapshot.value as Map);
+    for (String? key in [snapshotKeyPatient, snapshotKeyTreatment]) {
+      if (key == null) continue;
 
-      // Determine the offset based on selectedMonth
-      int offset = 0;
-      switch (selectedMonth) {
-        case '1 Month Ago':
-          offset = 1;
-          break;
-        case '2 Months Ago':
-          offset = 2;
-          break;
-        case '3 Months Ago':
-          offset = 3;
-          break;
-        default:
-          offset = 0;
+      final snapshot = await _snapshotsRef.child(key).child('ACT').get();
+      if (snapshot.exists) {
+        final data = Map<String, dynamic>.from(snapshot.value as Map);
+        mergedACT.addAll(data);
       }
+    }
 
-      // Calculate the target month and year
-      DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
+    if (mergedACT.isEmpty) {
+      setState(() => actScore = null);
+      return;
+    }
 
-      // Filter entries for selected month
-      final filteredEntries = actData.entries.where((e) {
-        int? ts = int.tryParse(e.key);
-        if (ts == null) return false;
-        DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
-        return date.year == targetDate.year && date.month == targetDate.month;
-      }).toList();
+    int offset = {
+          'This Month': 0,
+          '1 Month Ago': 1,
+          '2 Months Ago': 2,
+          '3 Months Ago': 3
+        }[selectedMonth] ??
+        0;
 
-      if (filteredEntries.isNotEmpty) {
-        filteredEntries
-            .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
-        final latestACT =
-            int.tryParse(filteredEntries.first.value.toString()) ?? 0;
+    DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
 
-        setState(() {
-          actScore = latestACT;
-          actIcon = latestACT >= 20
-              ? Icons.emoji_emotions
-              : Icons.sentiment_dissatisfied;
-          actIconColor = latestACT >= 20
-              ? const Color.fromARGB(255, 252, 252, 252)
-              : const Color.fromARGB(255, 253, 253, 253);
-        });
-      } else {
-        setState(() {
-          actScore = null; // No ACT score for this month
-        });
-      }
+    final filteredEntries = mergedACT.entries.where((e) {
+      int? ts = int.tryParse(e.key);
+      if (ts == null) return false;
+      DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+      return date.year == targetDate.year && date.month == targetDate.month;
+    }).toList();
+
+    if (filteredEntries.isNotEmpty) {
+      filteredEntries
+          .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
+      final latestACT =
+          double.tryParse(filteredEntries.first.value.toString())?.round() ?? 0;
+
+      setState(() {
+        actScore = latestACT;
+        actIcon = latestACT >= 20
+            ? Icons.emoji_emotions
+            : Icons.sentiment_dissatisfied;
+        actIconColor = latestACT >= 20
+            ? const Color.fromARGB(255, 252, 252, 252)
+            : const Color.fromARGB(255, 253, 253, 253);
+      });
+    } else {
+      setState(() => actScore = null);
     }
   }
 
