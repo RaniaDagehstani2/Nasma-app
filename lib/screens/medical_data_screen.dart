@@ -94,6 +94,7 @@ class _MedicalDataScreenState extends State<MedicalDataScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true, // ✅ allow keyboard to resize screen
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text(
@@ -101,190 +102,196 @@ class _MedicalDataScreenState extends State<MedicalDataScreen> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            fontFamily: "Nunito", // Make it bold
+            fontFamily: "Nunito",
           ),
         ),
         automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Text(
-                "To optimize your experience, we need some medical data.",
-                textAlign: TextAlign.center),
-            const SizedBox(height: 20),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "To optimize your experience, we need some medical data.",
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
 
-            // Gender Selection
-            // Gender Selection
-            Align(
-              alignment: Alignment.centerLeft, // Left align the title
-              child: const Text(
-                "Gender",
-                style: TextStyle(fontSize: 13),
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text("Female"),
-                    value: "Female",
-                    groupValue: selectedGender,
-                    onChanged: (value) => setState(() {
-                      selectedGender = value;
-                      validateInputs();
-                    }),
+                      // Gender
+                      const Text("Gender", style: TextStyle(fontSize: 13)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: const Text("Female"),
+                              value: "Female",
+                              groupValue: selectedGender,
+                              onChanged: (value) => setState(() {
+                                selectedGender = value;
+                                validateInputs();
+                              }),
+                            ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: const Text("Male"),
+                              value: "Male",
+                              groupValue: selectedGender,
+                              onChanged: (value) => setState(() {
+                                selectedGender = value;
+                                validateInputs();
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Pregnancy (if female)
+                      if (selectedGender == "Female") ...[
+                        const Text("Are you pregnant?",
+                            style: TextStyle(fontSize: 13)),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<bool>(
+                                title: const Text("Yes"),
+                                value: true,
+                                groupValue: isPregnant,
+                                onChanged: (value) => setState(() {
+                                  isPregnant = value;
+                                  validateInputs();
+                                }),
+                              ),
+                            ),
+                            Expanded(
+                              child: RadioListTile<bool>(
+                                title: const Text("No"),
+                                value: false,
+                                groupValue: isPregnant,
+                                onChanged: (value) => setState(() {
+                                  isPregnant = value;
+                                  validateInputs();
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+
+                      // Allergy
+                      const Text("Do you have allergies?",
+                          style: TextStyle(fontSize: 13)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<bool>(
+                              title: const Text("Yes"),
+                              value: true,
+                              groupValue: hasAllergy,
+                              onChanged: (value) => setState(() {
+                                hasAllergy = value;
+                                validateInputs();
+                              }),
+                            ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<bool>(
+                              title: const Text("No"),
+                              value: false,
+                              groupValue: hasAllergy,
+                              onChanged: (value) => setState(() {
+                                hasAllergy = value;
+                                validateInputs();
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Birthday
+                      InkWell(
+                        onTap: () => _selectDate(context),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: "Birthday",
+                            border: OutlineInputBorder(),
+                            filled: true, // ✅ background fix
+                            fillColor: Colors.white, // ✅ match page color
+                          ),
+                          child: Text(
+                            selectedDate != null
+                                ? DateFormat("dd/MM/yyyy").format(selectedDate!)
+                                : "Select a date",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Weight
+                      TextField(
+                        controller: weightController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => validateInputs(),
+                        decoration:
+                            const InputDecoration(labelText: "Weight (kg)"),
+                      ),
+
+                      // Height
+                      TextField(
+                        controller: heightController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => validateInputs(),
+                        decoration:
+                            const InputDecoration(labelText: "Height (cm)"),
+                      ),
+
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: isValid ? _saveMedicalData : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isValid
+                                ? const Color(0xFF8699DA)
+                                : const Color(0xFFB1B1B1),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 15, horizontal: 80),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            elevation: 5,
+                          ),
+                          child: const Text(
+                            "Next",
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontFamily: "Nunito",
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20), // extra padding at bottom
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text("Male"),
-                    value: "Male",
-                    groupValue: selectedGender,
-                    onChanged: (value) => setState(() {
-                      selectedGender = value;
-                      validateInputs();
-                    }),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-// Pregnancy Status (Only if Female)
-            if (selectedGender == "Female") ...[
-              Align(
-                alignment: Alignment.centerLeft, // Left align the title
-                child: const Text(
-                  "Are you pregnant?",
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text("Yes"),
-                      value: true,
-                      groupValue: isPregnant,
-                      onChanged: (value) => setState(() {
-                        isPregnant = value;
-                        validateInputs();
-                      }),
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text("No"),
-                      value: false,
-                      groupValue: isPregnant,
-                      onChanged: (value) => setState(() {
-                        isPregnant = value;
-                        validateInputs();
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 10),
-
-// Allergy Status
-            Align(
-              alignment: Alignment.centerLeft, // Left align the title
-              child: const Text(
-                "Do you have allergies?",
-                style: TextStyle(fontSize: 13),
               ),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text("Yes"),
-                    value: true,
-                    groupValue: hasAllergy,
-                    onChanged: (value) => setState(() {
-                      hasAllergy = value;
-                      validateInputs();
-                    }),
-                  ),
-                ),
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text("No"),
-                    value: false,
-                    groupValue: hasAllergy,
-                    onChanged: (value) => setState(() {
-                      hasAllergy = value;
-                      validateInputs();
-                    }),
-                  ),
-                ),
-              ],
-            ),
-
-            // Date of Birth - Calendar Picker
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: "Birthday",
-                  border: OutlineInputBorder(),
-                ),
-                child: Text(
-                  selectedDate != null
-                      ? DateFormat("dd/MM/yyyy").format(selectedDate!)
-                      : "Select a date",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Weight
-            TextField(
-              controller: weightController,
-              keyboardType: TextInputType.number,
-              onChanged: (_) => validateInputs(),
-              decoration: const InputDecoration(labelText: "Weight (kg)"),
-            ),
-
-            // Height
-            TextField(
-              controller: heightController,
-              keyboardType: TextInputType.number,
-              onChanged: (_) => validateInputs(),
-              decoration: const InputDecoration(labelText: "Height (cm)"),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isValid ? _saveMedicalData : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isValid ? const Color(0xFF8699DA) : const Color(0xFFB1B1B1),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 80),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                elevation: 5,
-              ),
-              child: const Text(
-                "Next",
-                style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontFamily: "Nunito",
-                    fontWeight:
-                        FontWeight.bold), // Change to your desired color
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

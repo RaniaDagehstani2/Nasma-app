@@ -215,8 +215,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset:
+          true, // ✅ ADDED: allows layout to adjust when keyboard opens
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -225,91 +228,113 @@ class _SignUpScreenState extends State<SignUpScreen> {
             colors: [Colors.white, Colors.white],
           ),
         ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "SIGN UP",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: "Nunito",
-                  ),
-                ),
-                const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      const TextSpan(
-                        text: "Already have an account? ",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontFamily: "Nunito",
-                        ),
-                      ),
-                      TextSpan(
-                        text: "Log in",
-                        style: const TextStyle(
-                          color: Color(0xFF8699DA),
-                          fontSize: 14,
-                          fontFamily: "Nunito",
-                          fontWeight: FontWeight.bold,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SignInScreen(),
+        child: SafeArea(
+          child: LayoutBuilder(
+            // ✅ ADDED: Ensures full height context
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                // ✅ ADDED: Enables scrolling
+                child: ConstrainedBox(
+                  // ✅ ADDED: Forces minHeight to screen height
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    // ✅ ADDED: Allows child to take natural height
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(
+                              height: 24), // ✅ ADDED: spacing from top
+                          const Text(
+                            "SIGN UP",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: "Nunito",
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: "Already have an account? ",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontFamily: "Nunito",
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: "Log in",
+                                  style: const TextStyle(
+                                    color: Color(0xFF8699DA),
+                                    fontSize: 14,
+                                    fontFamily: "Nunito",
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                SignInScreen()),
+                                      );
+                                    },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildLabeledTextField(emailController, "Email"),
+                          _buildLabeledTextField(passwordController, "Password",
+                              isPassword: true),
+                          _buildLabeledTextField(idController, "ID",
+                              isNumeric: true),
+                          _buildLabeledTextField(
+                              firstNameController, "First Name"),
+                          _buildLabeledTextField(
+                              lastNameController, "Last Name"),
+                          _buildLabeledTextField(
+                              phoneController, "Phone Number",
+                              isNumeric: true),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: ElevatedButton(
+                              onPressed: isFormValid ? _signUp : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isFormValid
+                                    ? const Color(0xFF8699DA)
+                                    : const Color(0xFFB1B1B1),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 80),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                elevation: 5,
                               ),
-                            );
-                          },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildLabeledTextField(emailController, "Email"),
-                _buildLabeledTextField(passwordController, "Password",
-                    isPassword: true),
-                _buildLabeledTextField(idController, "ID", isNumeric: true),
-                _buildLabeledTextField(firstNameController, "First Name"),
-                _buildLabeledTextField(lastNameController, "Last Name"),
-                _buildLabeledTextField(phoneController, "Phone Number",
-                    isNumeric: true),
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: isFormValid ? _signUp : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isFormValid
-                          ? const Color(0xFF8699DA)
-                          : const Color(0xFFB1B1B1),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 80),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      elevation: 5,
-                    ),
-                    child: const Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: "Nunito",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                              child: const Text(
+                                "Sign Up",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: "Nunito",
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24), // ✅ ADDED: bottom spacing
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

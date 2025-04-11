@@ -17,8 +17,6 @@ class HealthDashboard extends StatefulWidget {
 }
 
 class _HealthDashboardState extends State<HealthDashboard> {
-  final DatabaseReference _collectingDataRef =
-      FirebaseDatabase.instance.ref().child('CollectingData');
   final DatabaseReference _snapshotsRef =
       FirebaseDatabase.instance.ref().child('Snapshots');
   final DatabaseReference _patientRef =
@@ -30,10 +28,8 @@ class _HealthDashboardState extends State<HealthDashboard> {
   String? collectingDataKey;
   String? treatmentPlanId;
   String selectedMonth = 'This Month';
-  String? snapshotKeyPatient;
-  String? snapshotKeyTreatment;
 
-  int? actScore;
+  double? actScore;
   IconData actIcon = Icons.sentiment_neutral;
   Color actIconColor = Colors.grey;
 
@@ -56,133 +52,99 @@ class _HealthDashboardState extends State<HealthDashboard> {
   }
 
   Future<void> _fetchPatient1Info() async {
-    final snapshot = await _collectingDataRef.get();
-    if (snapshot.exists) {
-      final data = Map<String, dynamic>.from(snapshot.value as Map);
-      for (var entry in data.entries) {
-        final entryData = Map<String, dynamic>.from(entry.value);
-        if (entryData['patient_ID']?.toString() == widget.patientId) {
-          // dynamic patient id ---------------------
-          collectingDataKey = entry.key;
-          treatmentPlanId = entryData['treatmentPlan_ID']?.toString();
-          // ✅ Store both keys
-          snapshotKeyPatient = widget.patientId;
-          snapshotKeyTreatment = treatmentPlanId;
-          break;
-        }
-      }
+    // Fetch patient data directly from the Patient table using patientId as the key
+    final patientSnapshot = await _patientRef.child(widget.patientId).get();
+
+    if (patientSnapshot.exists) {
+      final patientData =
+          Map<String, dynamic>.from(patientSnapshot.value as Map);
+
+      // Assuming the patient data contains 'treatmentPlan_ID' field
+      final fetchedTreatmentPlanId =
+          patientData['TreatmentPlan_ID']?.toString();
+
+      // Store the treatment plan ID
+      treatmentPlanId = fetchedTreatmentPlanId;
+
+      print(
+          "Patient found in Patient table! Patient ID: ${widget.patientId}, Treatment Plan ID: $treatmentPlanId");
+    } else {
+      print("No data found for this patient in the Patient table.");
     }
   }
 
-  // Future<void> _fetchACTScoreFromSnapshots() async {
-  //   final actRef = _snapshotsRef.child(widget.patientId).child('ACT');
-  //   final snapshot = await actRef.get();
-
-  //   if (snapshot.exists) {
-  //     final Map<String, dynamic> actData =
-  //         Map<String, dynamic>.from(snapshot.value as Map);
-
-  //     // Determine the offset based on selectedMonth
-  //     int offset = 0;
-  //     switch (selectedMonth) {
-  //       case '1 Month Ago':
-  //         offset = 1;
-  //         break;
-  //       case '2 Months Ago':
-  //         offset = 2;
-  //         break;
-  //       case '3 Months Ago':
-  //         offset = 3;
-  //         break;
-  //       default:
-  //         offset = 0;
-  //     }
-
-  //     // Calculate the target month and year
-  //     DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
-
-  //     // Filter entries for selected month
-  //     final filteredEntries = actData.entries.where((e) {
-  //       int? ts = int.tryParse(e.key);
-  //       if (ts == null) return false;
-  //       DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
-  //       return date.year == targetDate.year && date.month == targetDate.month;
-  //     }).toList();
-
-  //     if (filteredEntries.isNotEmpty) {
-  //       filteredEntries
-  //           .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
-  //       final latestACT =
-  //           int.tryParse(filteredEntries.first.value.toString()) ?? 0;
-
-  //       setState(() {
-  //         actScore = latestACT;
-  //         actIcon = latestACT >= 20
-  //             ? Icons.emoji_emotions
-  //             : Icons.sentiment_dissatisfied;
-  //         actIconColor = latestACT >= 20
-  //             ? const Color.fromARGB(255, 252, 252, 252)
-  //             : const Color.fromARGB(255, 253, 253, 253);
-  //       });
-  //     } else {
-  //       setState(() {
-  //         actScore = null; // No ACT score for this month
-  //       });
-  //     }
-  //   }
-  // }
   Future<void> _fetchACTScoreFromSnapshots() async {
-    Map<String, dynamic> mergedACT = {};
-
-    for (String? key in [snapshotKeyPatient, snapshotKeyTreatment]) {
-      if (key == null) continue;
-
-      final snapshot = await _snapshotsRef.child(key).child('ACT').get();
-      if (snapshot.exists) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
-        mergedACT.addAll(data);
-      }
-    }
-
-    if (mergedACT.isEmpty) {
-      setState(() => actScore = null);
+    // Ensure treatmentPlanId and patientId are valid
+    if (treatmentPlanId == null || widget.patientId.isEmpty) {
+      print("Invalid treatmentPlanId or patientId.");
       return;
     }
 
-    int offset = {
-          'This Month': 0,
-          '1 Month Ago': 1,
-          '2 Months Ago': 2,
-          '3 Months Ago': 3
-        }[selectedMonth] ??
-        0;
+    // Reference the 'ACT' data using the treatment plan ID
+    final actRef = _snapshotsRef.child(treatmentPlanId!).child('ACT');
+    final snapshot = await actRef.get();
 
-    DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
+    if (snapshot.exists) {
+      final Map<String, dynamic> actData =
+          Map<String, dynamic>.from(snapshot.value as Map);
 
-    final filteredEntries = mergedACT.entries.where((e) {
-      int? ts = int.tryParse(e.key);
-      if (ts == null) return false;
-      DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
-      return date.year == targetDate.year && date.month == targetDate.month;
-    }).toList();
+      print("ACT Data: $actData");
 
-    if (filteredEntries.isNotEmpty) {
-      filteredEntries
-          .sort((a, b) => int.parse(b.key).compareTo(int.parse(a.key)));
-      final latestACT =
-          double.tryParse(filteredEntries.first.value.toString())?.round() ?? 0;
+      // Determine the offset based on selectedMonth
+      int offset = 0;
+      switch (selectedMonth) {
+        case '1 Month Ago':
+          offset = 1;
+          break;
+        case '2 Months Ago':
+          offset = 2;
+          break;
+        case '3 Months Ago':
+          offset = 3;
+          break;
+        default:
+          offset = 0;
+      }
 
-      setState(() {
-        actScore = latestACT;
-        actIcon = latestACT >= 20
-            ? Icons.emoji_emotions
-            : Icons.sentiment_dissatisfied;
-        actIconColor = latestACT >= 20
-            ? const Color.fromARGB(255, 252, 252, 252)
-            : const Color.fromARGB(255, 253, 253, 253);
-      });
+      // Calculate the target date for filtering by month
+      DateTime targetDate = DateTime(_now.year, _now.month - offset, 1);
+      print("Filtering data for target date: $targetDate");
+
+      // Filter ACT data entries for the selected month
+      final filteredEntries = actData.entries.where((e) {
+        int? timestamp = int.tryParse(e.key);
+        if (timestamp == null) return false;
+        DateTime date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        return date.year == targetDate.year && date.month == targetDate.month;
+      }).toList();
+
+      print("Filtered Entries: $filteredEntries");
+
+      // Sort by timestamp and select the most recent entry
+      if (filteredEntries.isNotEmpty) {
+        filteredEntries
+            .sort((a, b) => double.parse(b.key).compareTo(int.parse(a.key)));
+        final latestACT =
+            double.tryParse(filteredEntries.first.value.toString()) ?? 0;
+
+        print("Latest ACT Score: $latestACT");
+
+        setState(() {
+          actScore = latestACT;
+          actIcon = latestACT >= 20
+              ? Icons.emoji_emotions
+              : Icons.sentiment_dissatisfied;
+          actIconColor = latestACT >= 20
+              ? const Color.fromARGB(255, 252, 252, 252)
+              : const Color.fromARGB(255, 253, 253, 253);
+        });
+      } else {
+        setState(() {
+          actScore = null; // No ACT score for this month
+        });
+      }
     } else {
-      setState(() => actScore = null);
+      print("No ACT data found in Snapshots.");
     }
   }
 
@@ -206,6 +168,8 @@ class _HealthDashboardState extends State<HealthDashboard> {
         }
       });
     }
+
+    print("Medication History: Taken: $taken, Missed: $missed");
 
     setState(() {
       takenCount = taken;
@@ -289,6 +253,7 @@ class _HealthDashboardState extends State<HealthDashboard> {
       });
     }
 
+    print("Metric Data for $metric: $dataMap");
     return dataMap;
   }
 
@@ -641,10 +606,12 @@ class _HealthDashboardState extends State<HealthDashboard> {
     final heartRateData = await _fetchMetricData('heartRate');
     final respiratoryData = await _fetchMetricData('respiratoryRate');
     final tempData = await _fetchMetricData('temperature');
+    final oxygenData = await _fetchMetricData('oxygenSaturation');
     return {
       'Heart Rate': heartRateData,
       'Respiratory Rate': respiratoryData,
       'Temperature': tempData,
+      'oxygen Saturation': oxygenData
     };
   }
 
@@ -946,6 +913,7 @@ class _HealthDashboardState extends State<HealthDashboard> {
                     'Heart Rate': Colors.red,
                     'Respiratory Rate': Colors.green,
                     'Temperature': Colors.blue,
+                    'oxygen Saturation': const Color.fromARGB(255, 221, 167, 5),
                   };
 
                   snapshot.data!.forEach((metric, dataMap) {

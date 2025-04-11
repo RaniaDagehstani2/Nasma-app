@@ -240,7 +240,7 @@ class _SignUpNextScreenState extends State<SignUpNextScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // === "I'm Patient" Section ===
-            const Text("I'm Patient"),
+            const Text("I'm patient"),
             const SizedBox(height: 5),
             if (!isPatientAdded)
               Row(
@@ -283,7 +283,7 @@ class _SignUpNextScreenState extends State<SignUpNextScreen> {
             const SizedBox(height: 20),
 
             // === "I've Dependent" Section ===
-            const Text("I've Dependent"),
+            const Text("I have dependent"),
             const SizedBox(height: 10),
 
             // Display added dependents first (each name gets a box like the patient box)

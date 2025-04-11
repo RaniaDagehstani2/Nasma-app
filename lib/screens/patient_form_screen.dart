@@ -309,9 +309,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   // }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true, // ✅ Allows keyboard to push content up
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text(
@@ -319,147 +321,125 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            fontFamily: "Nunito", // Make it bold
+            fontFamily: "Nunito",
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              enabled: false,
-              decoration: InputDecoration(labelText: "ID: ${widget.userId}"),
-            ),
-            TextField(
-              enabled: false,
-              decoration:
-                  InputDecoration(labelText: "First Name: ${widget.firstName}"),
-            ),
-            TextField(
-              enabled: false,
-              decoration:
-                  InputDecoration(labelText: "Last Name: ${widget.lastName}"),
-            ),
-            TextField(
-              controller: emergencyPhoneController,
-              keyboardType: TextInputType.number,
-              onChanged: (_) => validateInputs(),
-              decoration: InputDecoration(
-                labelText: "Emergency Phone",
-                errorText: phoneError,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Doctor Selection Dropdown
-            // DropdownButtonFormField<String>(
-            //   value: selectedDoctorId,
-            //   hint: const Text("Select Doctor"),
-            //   items: doctors.map((doc) {
-            //     return DropdownMenuItem<String>(
-            //       value: doc["id"], // Store only doctor ID
-            //       child: Text(
-            //         "${doc["Fname"]} ${doc["Lname"]} - ${doc["Hospital"]} | ${doc["Speciality"]} | ${doc["Degree"]}",
-            //       ),
-            //     );
-            //   }).toList(),
-            //   onChanged: (value) {
-            //     setState(() {
-            //       selectedDoctorId = value;
-            //       validateInputs();
-            //     });
-            //   },
-            //   decoration: InputDecoration(errorText: doctorError),
-            // ),
-            DropdownButtonFormField<String>(
-              value: selectedDoctorId,
-              hint: const Text("Select Doctor"),
-              items: doctors.map((doc) {
-                return DropdownMenuItem<String>(
-                  value: doc["id"],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Name: ${doc["Fname"]} ${doc["Lname"]}",
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text("Hospital: ${doc["Hospital"]}"),
-                      Text("Specialty: ${doc["Speciality"]}"),
-                      Text("Degree: ${doc["Degree"]}"),
-                      const Divider(), // Adds a horizontal line between doctors
+                      TextField(
+                        enabled: false,
+                        decoration:
+                            InputDecoration(labelText: "ID: ${widget.userId}"),
+                      ),
+                      TextField(
+                        enabled: false,
+                        decoration: InputDecoration(
+                            labelText: "First Name: ${widget.firstName}"),
+                      ),
+                      TextField(
+                        enabled: false,
+                        decoration: InputDecoration(
+                            labelText: "Last Name: ${widget.lastName}"),
+                      ),
+                      TextField(
+                        controller: emergencyPhoneController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => validateInputs(),
+                        decoration: InputDecoration(
+                          labelText: "Emergency Phone (Optional)",
+                          errorText: phoneError,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      DropdownButtonFormField<String>(
+                        value: selectedDoctorId,
+                        hint: const Text("Select Doctor"),
+                        items: doctors.map((doc) {
+                          return DropdownMenuItem<String>(
+                            value: doc["id"],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Name: ${doc["Fname"]} ${doc["Lname"]}",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
+                                Text("Hospital: ${doc["Hospital"]}"),
+                                Text("Specialty: ${doc["Speciality"]}"),
+                                Text("Degree: ${doc["Degree"]}"),
+                                const Divider(),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedDoctorId = value;
+                            validateInputs();
+                          });
+                        },
+                        selectedItemBuilder: (BuildContext context) {
+                          return doctors.map<Widget>((doc) {
+                            return Text(
+                              "${doc["Fname"]} ${doc["Lname"]}",
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            );
+                          }).toList();
+                        },
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelText: "Select a Doctor",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          isDense: true,
+                          errorText: doctorError,
+                        ),
+                        dropdownColor: Colors.white,
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: isValid ? _savePatientData : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isValid
+                                ? const Color(0xFF8699DA)
+                                : const Color(0xFFB1B1B1),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 15, horizontal: 80),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24)),
+                            elevation: 5,
+                          ),
+                          child: const Text(
+                            "Next",
+                            style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                                fontFamily: "Nunito",
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20), // ✅ Extra space at bottom
                     ],
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedDoctorId = value;
-                  validateInputs();
-                });
-              },
-              selectedItemBuilder: (BuildContext context) {
-                return doctors.map<Widget>((doc) {
-                  return Text(
-                    "${doc["Fname"]} ${doc["Lname"]}", // Show only the doctor's name after selection
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  );
-                }).toList();
-              },
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                labelText: "Select a Doctor",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
                 ),
-                isDense: true, // Removes extra padding
-                errorText:
-                    doctorError, // Error message if doctor is not selected
-              ),
-              dropdownColor: Colors.white,
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isValid ? _savePatientData : null,
-              /*style: ElevatedButton.styleFrom(
-                  backgroundColor: canStart
-                      ? const Color(0xFF8699DA)
-                      : const Color(0xFFB1B1B1),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 15, horizontal: 80),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
-                  elevation: 5,
-                ),
-                child: const Text("Start",
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontFamily: "Nunito",
-                        fontWeight: FontWeight.bold)),
-              ), */
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isValid ? const Color(0xFF8699DA) : const Color(0xFFB1B1B1),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 80),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                elevation: 5,
-              ),
-              child: const Text(
-                "Next",
-                style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontFamily: "Nunito",
-                    fontWeight:
-                        FontWeight.bold), // Change to your desired color
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

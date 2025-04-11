@@ -39,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showCheckIn = true;
   String activityAnswer = '';
   String breathAnswer = '';
+  Color healthColor = const Color.fromARGB(255, 229, 212, 65);
+
 //--------------------------------------------------footer------------
   int _selectedIndex = 0;
   String patientId = '';
@@ -164,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hasShownAlert = prefs.getBool('hasShownAlert') ?? false;
 
     if (!hasShownAlert) {
-      showAlert("Welcome!", "This is your first visit to the page.");
       await prefs.setBool('hasShownAlert', true); // Mark alert as shown
     }
   }
@@ -389,16 +390,21 @@ class _HomeScreenState extends State<HomeScreen> {
           //  Furat  Code Insert Ends Here----------------------------------
 
           setState(() {
-            double ACT = (treatmentPlanData['ACT'] is int)
-                ? (treatmentPlanData['ACT'] as int).toDouble()
-                : (treatmentPlanData['ACT'] ?? 0.0);
+            String actStatus = treatmentPlanData['ACTst'] ?? 'Controlled';
 
-            healthMessage = ACT >= 20
-                ? "My Asthma is Well Controlled"
-                : "My Asthma is Worsening";
-
-            healthImage =
-                ACT >= 20 ? 'assets/smileface.png' : 'assets/sadface.png';
+            if (actStatus == 'Controlled') {
+              healthMessage = "My Asthma is Well Controlled";
+              healthImage = 'assets/smileface.png';
+              healthColor = const Color.fromARGB(255, 89, 216, 93);
+            } else if (actStatus == 'Partly Controlled') {
+              healthMessage = "My Asthma is Partly Controlled";
+              healthImage = 'assets/sadface.png';
+              healthColor = const Color.fromARGB(255, 229, 212, 65);
+            } else {
+              healthMessage = "My Asthma is Uncontrolled";
+              healthImage = 'assets/sadface.png';
+              healthColor = const Color.fromARGB(255, 156, 43, 35);
+            }
           });
 
           List<Map<String, dynamic>> filteredDetails = [];
@@ -1015,7 +1021,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  ///---------------------------------------------------------------------------
   Widget _buildTreatmentPlan() {
     double screenWidth = MediaQuery.of(context).size.width;
 
@@ -1025,16 +1030,14 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           "TREATMENT PLAN",
           style: GoogleFonts.poppins(
-            fontSize: screenWidth * 0.07, // 🔥 Bigger Title
+            fontSize: screenWidth * 0.05,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
-        SizedBox(height: screenWidth * 0.05), // 🛠️ More space
-
-        // Horizontal Scrollable Cards
-        Container(
-          height: 170, // 🔥 Slightly Taller Cards
+        SizedBox(height: screenWidth * 0.05),
+        SizedBox(
+          height: 170,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: treatmentPlans.length,
@@ -1042,13 +1045,17 @@ class _HomeScreenState extends State<HomeScreen> {
               final plan = treatmentPlans[index];
 
               return Container(
-                width: screenWidth * 0.75,
-                margin: EdgeInsets.only(right: screenWidth * 0.05),
-                padding: EdgeInsets.all(screenWidth * 0.05), // 🛠️ More padding
+                width: screenWidth * 0.8, // ✅ Wider card (90% of screen)
+                margin: EdgeInsets.only(
+                  right: screenWidth * 0.04,
+                  left: index == 0
+                      ? screenWidth * 0.02
+                      : 0, // padding for first card
+                ),
+                padding: EdgeInsets.all(screenWidth * 0.04),
                 decoration: BoxDecoration(
-                  color: plan["bgColor"], // 🎨 Dynamic AM/PM Color
-                  borderRadius:
-                      BorderRadius.circular(16), // 🔥 More rounded corners
+                  color: plan["bgColor"],
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -1057,52 +1064,51 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   ],
                 ),
-
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 🌞🌙 Time-based Icon
                     Image.asset(
                       plan["icon"],
-                      width: screenWidth * 0.22,
-                      height: screenWidth * 0.22,
+                      width: screenWidth * 0.18,
+                      height: screenWidth * 0.18,
                     ),
-                    SizedBox(width: screenWidth * 0.05), // 🔥 More space
+                    SizedBox(width: screenWidth * 0.04),
 
-                    // 📌 Text Content
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          plan["title"], // Medication Name
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.06, // 🔥 Bigger Font
-                            fontWeight: FontWeight.w600,
-                            color: plan["titleColor"],
+                    // Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            plan["title"],
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: GoogleFonts.poppins(
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.w600,
+                              color: plan["titleColor"],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: screenWidth * 0.02), // 🔥 Space
-
-                        Text(
-                          "Time: ${plan["time"]}", // Time
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.w500,
-                            color: plan["timeColor"],
+                          SizedBox(height: screenWidth * 0.02),
+                          Text(
+                            "Time: ${plan["time"]}",
+                            style: GoogleFonts.poppins(
+                              fontSize: screenWidth * 0.04,
+                              fontWeight: FontWeight.w500,
+                              color: plan["timeColor"],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: screenWidth * 0.015),
-
-                        Text(
-                          "Dosage: ${plan["dosage"]}", // Dosage
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.w500,
-                            color: plan["dosageColor"],
+                          SizedBox(height: screenWidth * 0.01),
+                          Text(
+                            "Dosage: ${plan["dosage"]}",
+                            style: GoogleFonts.poppins(
+                              fontSize: screenWidth * 0.04,
+                              fontWeight: FontWeight.w500,
+                              color: plan["dosageColor"],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1133,7 +1139,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: EdgeInsets.all(screenWidth * 0.04), // Scalable padding
             decoration: BoxDecoration(
-              color: Color.fromARGB(255, 232, 207, 134),
+              color: healthColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -1272,17 +1278,16 @@ class _HomeScreenState extends State<HomeScreen> {
       if (snapshot.snapshot.value != null) {
         Map<dynamic, dynamic> data =
             snapshot.snapshot.value as Map<dynamic, dynamic>;
-        bool taken = data.values.any((entry) => entry["status"] == "Taken");
-        bool missed = data.values.any((entry) => entry["status"] == "Missed");
+        List<dynamic> statuses =
+            data.values.map((e) => e['status'] as String).toList();
 
-        weeklyData[formattedDate] = taken
-            ? "Taken"
-            : missed
-                ? "Missed"
-                : "Partial"; // If neither taken nor missed, it's partial
-      } else {
-        weeklyData[formattedDate] =
-            "No Data"; // If no records exist for that day
+        if (statuses.every((s) => s == "Taken")) {
+          weeklyData[formattedDate] = "Taken";
+        } else if (statuses.every((s) => s == "Missed")) {
+          weeklyData[formattedDate] = "Missed";
+        } else {
+          weeklyData[formattedDate] = "Partial";
+        }
       }
     }
 
@@ -1295,10 +1300,10 @@ class _HomeScreenState extends State<HomeScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return FutureBuilder<Map<String, String>>(
-      future: fetchWeeklyProgress(patientId), // Fetch real data
+      future: fetchWeeklyProgress(patientId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator()); // Show loader
+          return Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -1306,6 +1311,11 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         Map<String, String> weeklyProgress = snapshot.data!;
+
+        DateTime now = DateTime.now();
+        List<DateTime> last7Days = List.generate(7, (index) {
+          return now.subtract(Duration(days: 6 - index));
+        });
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
@@ -1349,30 +1359,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(height: screenHeight * 0.02),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: weeklyProgress.entries.map((entry) {
-                        String date = entry.key;
-                        String status = entry.value;
-                        String imagePath = status == "Taken"
-                            ? "assets/true.png"
-                            : status == "Missed"
-                                ? "assets/false.png"
-                                : "assets/partially.png"; // Orange warning for Partial
+                      children: last7Days.map((day) {
+                        String date = DateFormat('yyyy-MM-dd').format(day);
+                        String? status = weeklyProgress[date];
+                        String dayName = DateFormat('E').format(day);
+
+                        String? imagePath;
+                        if (status == "Taken") {
+                          imagePath = "assets/true.png";
+                        } else if (status == "Missed") {
+                          imagePath = "assets/false.png";
+                        } else if (status == "Partial") {
+                          imagePath = "assets/partially.png";
+                        }
 
                         return Column(
                           children: [
                             Text(
-                              // Safa changed this part to convert Date to day name by using Dateform labrary from Dart
-                              DateFormat('E').format(DateTime.parse(
-                                  date)), // Convert date to day name
+                              dayName,
                               style: GoogleFonts.poppins(
                                 fontSize: screenWidth * 0.035,
                               ),
                             ),
-                            Image.asset(
-                              imagePath,
-                              width: screenWidth * 0.06,
-                              height: screenWidth * 0.06,
-                            ),
+                            SizedBox(height: screenHeight * 0.005),
+                            imagePath != null
+                                ? SizedBox(
+                                    width: screenWidth * 0.06,
+                                    height: screenWidth * 0.06,
+                                    child: Image.asset(imagePath),
+                                  )
+                                : SizedBox(
+                                    width: screenWidth * 0.06,
+                                    height: screenWidth * 0.06,
+                                    // Optional: Keep space but leave it blank
+                                  ),
                           ],
                         );
                       }).toList(),

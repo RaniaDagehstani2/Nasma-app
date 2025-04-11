@@ -42,8 +42,22 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         fontFamily: 'Nunito',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8699DA)),
+
+        // ✅ Custom Date Picker Theme
+        datePickerTheme: DatePickerThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          dayForegroundColor: MaterialStateProperty.all(Colors.black),
+          headerForegroundColor: Colors.black,
+          yearForegroundColor: MaterialStateProperty.all(Colors.black),
+          todayForegroundColor: MaterialStateProperty.all(Colors.white),
+          todayBackgroundColor: MaterialStateProperty.all(Color(0xFF8699DA)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
       home: const SplashScreen(),
     );
