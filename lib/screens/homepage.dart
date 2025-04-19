@@ -921,10 +921,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: AppFooter(
+    bottomNavigationBar: AppFooter(
         selectedIndex: _selectedIndex,
+        patientId: patientId,
+        userId: widget.userId,
         onItemTapped: _onItemTapped,
-        patientId: patientId, // ✅ Use the state variable instead
       ),
     );
   }
@@ -982,45 +983,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 //----------------------------------footer--------------------------
-  void _onItemTapped(int index, String patientId) {
+  void _onItemTapped(int index, String patientId, String userId) {
     if (index != _selectedIndex) {
       switch (index) {
         case 0:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    HomeScreen(userId: widget.userId)), // No patientId needed
+            MaterialPageRoute(builder: (context) => HomeScreen(userId: userId)),
           );
           break;
         case 1:
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => ConnectPatchScreen(
-                    userId: widget.userId, showBackButton: true)),
+                builder: (context) =>
+                    ConnectPatchScreen(userId: userId, showBackButton: true)),
           );
           break;
         case 2:
-          if (patientId != null) {
-            print("-------------+++++++ " + patientId);
-            Navigator.pushReplacement(
+          if (patientId.isNotEmpty) {
+            print("🩺 Navigating with patientId: $patientId");
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => PersonalInfoScreen(
-                  patientId: patientId!,
-                  previousPage: "home",
+                  userId: userId,
+                  patientId: patientId,
+                  previousPage: "HomePage",
                 ),
               ),
             );
           } else {
-            print(
-                "❌ Error: patientId is null, cannot navigate to PersonalInfoScreen!");
+            print("❌ Error: patientId is empty, cannot navigate!");
           }
           break;
       }
     }
   }
+
 
   Widget _buildTreatmentPlan() {
     double screenWidth = MediaQuery.of(context).size.width;
