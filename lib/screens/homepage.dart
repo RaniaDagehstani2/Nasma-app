@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 //----------------------------------------------------------------------------------------
 
-  Future<void> fetchTreatmentPlan(String patientId) async {
+   Future<void> fetchTreatmentPlan(String patientId) async {
     print("Fetching treatment plan for patient ID: $patientId");
 
     DatabaseReference databaseRef = FirebaseDatabase.instance.ref();
@@ -365,16 +365,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 treatmentPlanData['Dosage'] as Map<dynamic, dynamic>;
 
             intakeTimesMap.forEach((key, timeValue) {
-              // ✅ Safety: Ensure key exists in medicationNamesMap & dosagesMap
               String medicationName =
                   medicationNamesMap[key]?.toString() ?? "Medication";
               String dosage = dosagesMap[key]?.toString() ?? "Dosage";
 
-              // ✅ Safety: Ensure timeValue is String
               if (timeValue != null && timeValue is String) {
                 TimeOfDay intakeTime = _parseTime(timeValue);
-
-                // ✅ Schedule notification for this medication at this time
                 _scheduleNotifications([intakeTime], medicationName, dosage);
 
                 print(
@@ -388,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 "🚨 Missing intakeTimes, MedicationName, or Dosage in treatmentPlanData.");
           }
 
-          //  Furat  Code Insert Ends Here----------------------------------
+          //  Furat Code Insert Ends Here----------------------------------
 
           setState(() {
             String actStatus = treatmentPlanData['ACTst'] ?? 'Controlled';
@@ -437,28 +433,32 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
 
-          // ✅ Ensure Equal Lengths (if not, fill missing data)
-          int maxLength = [
-            intakeTimes.length,
-            medications.length,
-            dosages.length
-          ].reduce((a, b) => a > b ? a : b);
+          // ✅ Handle single medication with multiple intake times
+          int timesCount = intakeTimes.length;
+          int medsCount = medications.length;
+          int dosesCount = dosages.length;
 
-          while (intakeTimes.length < maxLength) intakeTimes.add("00:00 AM");
-          while (medications.length < maxLength) medications.add("Unknown");
-          while (dosages.length < maxLength) dosages.add("N/A");
+          if (timesCount > medsCount && medsCount == 1) {
+            String singleMed = medications[0];
+            String singleDose = dosages.isNotEmpty ? dosages[0] : "N/A";
+            medications = List.filled(timesCount, singleMed);
+            dosages = List.filled(timesCount, singleDose);
+          } else {
+            // 🧩 Handle normal mismatched lengths by padding
+            int maxLength = [timesCount, medsCount, dosesCount]
+                .reduce((a, b) => a > b ? a : b);
+            while (intakeTimes.length < maxLength) intakeTimes.add("00:00 AM");
+            while (medications.length < maxLength) medications.add("Unknown");
+            while (dosages.length < maxLength) dosages.add("N/A");
+          }
 
           // ✅ Generate Cards
-          for (int i = 0; i < maxLength; i++) {
+          for (int i = 0; i < intakeTimes.length; i++) {
             bool isPM = intakeTimes[i].toLowerCase().contains("pm");
 
-            Color cardColor = isPM
-                ? Color(0xFF6676AA)
-                : Color(0xFFF9FD88); // 🎨 Night (Dark Blue) & Morning (Yellow)
+            Color cardColor = isPM ? Color(0xFF6676AA) : Color(0xFFF9FD88);
             String iconPath = isPM ? "assets/night 1.png" : "assets/sun.png";
-            Color titleColor = isPM
-                ? Color(0xFFECF0F1)
-                : Color(0xFF6676AA); // 🌙 Light Text for Dark Mode
+            Color titleColor = isPM ? Color(0xFFECF0F1) : Color(0xFF6676AA);
             Color timeColor = isPM ? Colors.white : Colors.black;
             Color dosageColor = isPM ? Colors.grey[300]! : Colors.black;
 
@@ -490,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   TimeOfDay _parseTime(String time) {
     try {
-      time = time.replaceAll(" ", ""); // Remove spaces
+      time = time.replaceAll(" ", "");
       bool isPM = time.toLowerCase().contains("pm");
       bool isAM = time.toLowerCase().contains("am");
 
@@ -508,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
       print("🚨 Error parsing time: $time, Error: $e");
-      return TimeOfDay(hour: 0, minute: 0); // Default if parsing fails
+      return TimeOfDay(hour: 0, minute: 0);
     }
   }
 
