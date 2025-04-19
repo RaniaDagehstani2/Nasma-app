@@ -744,11 +744,9 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
       await treatmentPlanRef.update({
         "MedicationName": {
           "name1": nameControllers1[selectedOption]?.text ?? "",
-          "name2": nameControllers2[selectedOption]?.text ?? "",
         },
         "Dosage": {
           "inhale1": dosageControllers1[selectedOption]?.text ?? "",
-          "inhale2": dosageControllers2[selectedOption]?.text ?? "",
         },
         "Frequency": frequencyControllers[selectedOption]?.text ?? "",
         "intakeTimes": formattedTimes,
