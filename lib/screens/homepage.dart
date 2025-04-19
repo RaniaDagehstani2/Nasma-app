@@ -153,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         fetchDoctorDetails(users.first['Doctor_ID']);
         fetchTreatmentPlan(users.first['Patient_ID']);
+        NotificationService.initialize(users.first['Patient_ID']);
         checkAndShowCheckIn(users.first['Patient_ID']);
         listenForAlerts(patientId);
       } else {
@@ -959,7 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   selectedUserData['Patient_ID']; //  Update the state variable
 
               var doctorId = selectedUserData['Doctor_ID'];
-
+              NotificationService.initialize(patientId); // ✅ Add this line
               // Fetch data for the selected patient
               checkAndShowCheckIn(patientId!);
               fetchTreatmentPlan(patientId!);
