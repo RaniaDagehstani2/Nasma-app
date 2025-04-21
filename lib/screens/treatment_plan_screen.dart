@@ -585,6 +585,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
   String patientName = "";
   int age = 0;
   int actScore = 0;
+  String actStatus = "";
   bool isLoading = true;
 
   List<TimeOfDay> intakeTimes = [];
@@ -653,7 +654,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
         actScore = (treatmentData['ACT'] ?? 0)
             .toDouble()
             .round(); // or use toStringAsFixed(1) if you want 1 decimal
-
+        actStatus = treatmentData['ACTst'] ?? "N/A";
         // ✅ Extract plans
         mainPlan = {
           'MedicationName1': stepData['MedicationName']?['MainName1'] ?? '',
@@ -1144,7 +1145,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Name: $patientName\nAge: $age\nACT Score = $actScore",
+                  "Name: $patientName\nAge: $age\nACT Score = $actScore\nACT Status: $actStatus",
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.white,

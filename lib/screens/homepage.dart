@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'personalInfo.dart';
 import 'footer.dart';
 import 'connect_patch_screen.dart';
-import 'package:testtest/screens/connect_patch_screen.dart';
+import 'connect_patch_screen.dart';
 import 'package:testtest/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -328,7 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 //----------------------------------------------------------------------------------------
-
   Future<void> fetchTreatmentPlan(String patientId) async {
     print("Fetching treatment plan for patient ID: $patientId");
 
@@ -365,16 +364,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 treatmentPlanData['Dosage'] as Map<dynamic, dynamic>;
 
             intakeTimesMap.forEach((key, timeValue) {
-              // ✅ Safety: Ensure key exists in medicationNamesMap & dosagesMap
               String medicationName =
                   medicationNamesMap[key]?.toString() ?? "Medication";
               String dosage = dosagesMap[key]?.toString() ?? "Dosage";
 
-              // ✅ Safety: Ensure timeValue is String
               if (timeValue != null && timeValue is String) {
                 TimeOfDay intakeTime = _parseTime(timeValue);
-
-                // ✅ Schedule notification for this medication at this time
                 _scheduleNotifications([intakeTime], medicationName, dosage);
 
                 print(
@@ -388,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 "🚨 Missing intakeTimes, MedicationName, or Dosage in treatmentPlanData.");
           }
 
-          //  Furat  Code Insert Ends Here----------------------------------
+          //  Furat Code Insert Ends Here----------------------------------
 
           setState(() {
             String actStatus = treatmentPlanData['ACTst'] ?? 'Controlled';
@@ -437,28 +432,32 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
 
-          // ✅ Ensure Equal Lengths (if not, fill missing data)
-          int maxLength = [
-            intakeTimes.length,
-            medications.length,
-            dosages.length
-          ].reduce((a, b) => a > b ? a : b);
+          // ✅ Handle single medication with multiple intake times
+          int timesCount = intakeTimes.length;
+          int medsCount = medications.length;
+          int dosesCount = dosages.length;
 
-          while (intakeTimes.length < maxLength) intakeTimes.add("00:00 AM");
-          while (medications.length < maxLength) medications.add("Unknown");
-          while (dosages.length < maxLength) dosages.add("N/A");
+          if (timesCount > medsCount && medsCount == 1) {
+            String singleMed = medications[0];
+            String singleDose = dosages.isNotEmpty ? dosages[0] : "N/A";
+            medications = List.filled(timesCount, singleMed);
+            dosages = List.filled(timesCount, singleDose);
+          } else {
+            // 🧩 Handle normal mismatched lengths by padding
+            int maxLength = [timesCount, medsCount, dosesCount]
+                .reduce((a, b) => a > b ? a : b);
+            while (intakeTimes.length < maxLength) intakeTimes.add("00:00 AM");
+            while (medications.length < maxLength) medications.add("Unknown");
+            while (dosages.length < maxLength) dosages.add("N/A");
+          }
 
           // ✅ Generate Cards
-          for (int i = 0; i < maxLength; i++) {
+          for (int i = 0; i < intakeTimes.length; i++) {
             bool isPM = intakeTimes[i].toLowerCase().contains("pm");
 
-            Color cardColor = isPM
-                ? Color(0xFF6676AA)
-                : Color(0xFFF9FD88); // 🎨 Night (Dark Blue) & Morning (Yellow)
+            Color cardColor = isPM ? Color(0xFF6676AA) : Color(0xFFF9FD88);
             String iconPath = isPM ? "assets/night 1.png" : "assets/sun.png";
-            Color titleColor = isPM
-                ? Color(0xFFECF0F1)
-                : Color(0xFF6676AA); // 🌙 Light Text for Dark Mode
+            Color titleColor = isPM ? Color(0xFFECF0F1) : Color(0xFF6676AA);
             Color timeColor = isPM ? Colors.white : Colors.black;
             Color dosageColor = isPM ? Colors.grey[300]! : Colors.black;
 
@@ -490,7 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   TimeOfDay _parseTime(String time) {
     try {
-      time = time.replaceAll(" ", ""); // Remove spaces
+      time = time.replaceAll(" ", "");
       bool isPM = time.toLowerCase().contains("pm");
       bool isAM = time.toLowerCase().contains("am");
 
@@ -508,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
       print("🚨 Error parsing time: $time, Error: $e");
-      return TimeOfDay(hour: 0, minute: 0); // Default if parsing fails
+      return TimeOfDay(hour: 0, minute: 0);
     }
   }
 
@@ -923,8 +922,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: AppFooter(
         selectedIndex: _selectedIndex,
+        patientId: patientId,
+        userId: widget.userId,
         onItemTapped: _onItemTapped,
-        patientId: patientId, // ✅ Use the state variable instead
       ),
     );
   }
@@ -960,7 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   selectedUserData['Patient_ID']; //  Update the state variable
 
               var doctorId = selectedUserData['Doctor_ID'];
-              NotificationService.initialize(patientId); // ✅ Add this line
+              NotificationService.initialize(patientId);
               // Fetch data for the selected patient
               checkAndShowCheckIn(patientId!);
               fetchTreatmentPlan(patientId!);
@@ -982,40 +982,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 //----------------------------------footer--------------------------
-  void _onItemTapped(int index, String patientId) {
+  void _onItemTapped(int index, String patientId, String userId) {
     if (index != _selectedIndex) {
       switch (index) {
         case 0:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    HomeScreen(userId: widget.userId)), // No patientId needed
+            MaterialPageRoute(builder: (context) => HomeScreen(userId: userId)),
           );
           break;
         case 1:
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => ConnectPatchScreen(
-                    userId: widget.userId, showBackButton: true)),
+                builder: (context) =>
+                    ConnectPatchScreen(userId: userId, showBackButton: true)),
           );
           break;
         case 2:
-          if (patientId != null) {
-            print("-------------+++++++ " + patientId);
-            Navigator.pushReplacement(
+          if (patientId.isNotEmpty) {
+            print("🩺 Navigating with patientId: $patientId");
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => PersonalInfoScreen(
-                  patientId: patientId!,
-                  previousPage: "home",
+                  userId: userId,
+                  patientId: patientId,
+                  previousPage: "HomePage",
                 ),
               ),
             );
           } else {
-            print(
-                "❌ Error: patientId is null, cannot navigate to PersonalInfoScreen!");
+            print("❌ Error: patientId is empty, cannot navigate!");
           }
           break;
       }
@@ -1383,17 +1381,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             SizedBox(height: screenHeight * 0.005),
-                            imagePath != null
-                                ? SizedBox(
-                                    width: screenWidth * 0.06,
-                                    height: screenWidth * 0.06,
-                                    child: Image.asset(imagePath),
-                                  )
-                                : SizedBox(
-                                    width: screenWidth * 0.06,
-                                    height: screenWidth * 0.06,
-                                    // Optional: Keep space but leave it blank
-                                  ),
+                            SizedBox(
+                              width: screenWidth * 0.06,
+                              height: screenWidth * 0.06,
+                              child: imagePath != null
+                                  ? Image.asset(imagePath)
+                                  : SizedBox.shrink(),
+                            ),
                           ],
                         );
                       }).toList(),

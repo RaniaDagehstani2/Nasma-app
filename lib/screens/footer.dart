@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-//import 'personalInfo.dart';
-import 'homepage.dart';
-import 'connect_patch_screen.dart';
 
 class AppFooter extends StatelessWidget {
   final int selectedIndex;
-  final Function(int, String) onItemTapped; // Accepts patientId
-  final String patientId; // Store patientId
+  final Function(int, String, String) onItemTapped; // Now takes both IDs
+  final String patientId;
+  final String userId; // Newly added
 
   AppFooter({
     required this.selectedIndex,
     required this.onItemTapped,
     required this.patientId,
+    required this.userId,
   });
 
   @override
@@ -20,7 +19,7 @@ class AppFooter extends StatelessWidget {
       backgroundColor: Colors.white,
       currentIndex: selectedIndex,
       onTap: (index) {
-        onItemTapped(index, patientId); // Pass patientId when a tab is tapped
+        onItemTapped(index, patientId, userId); // Pass both IDs on tap
       },
       items: [
         BottomNavigationBarItem(

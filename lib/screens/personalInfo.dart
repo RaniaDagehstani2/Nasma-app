@@ -6,10 +6,15 @@ import 'homepage.dart';
 import 'connect_patch_screen.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
+  final String userId; // 👈 Add this
   final String patientId;
-  final String previousPage; // ✅ Track where the user came from
+  final String previousPage;
 
-  PersonalInfoScreen({required this.patientId, required this.previousPage});
+  PersonalInfoScreen({
+    required this.userId, // 👈 Add this
+    required this.patientId,
+    required this.previousPage,
+  });
 
   @override
   _PersonalInfoScreenState createState() => _PersonalInfoScreenState();
@@ -40,19 +45,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     fetchUserData();
   }
 
-  // ✅ Function to handle back navigation may we need to add all pages
+  // ✅ Function to handle back navigation
   void _handleBackNavigation() {
     if (widget.previousPage == "home") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => HomeScreen(userId: widget.patientId)),
+            builder: (context) => HomeScreen(userId: widget.userId)),
       );
     } else if (widget.previousPage == "dashboard") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => ConnectPatchScreen(userId: widget.patientId)),
+            builder: (context) => ConnectPatchScreen(userId: widget.userId)),
       );
     } else {
       Navigator.pop(
@@ -82,22 +87,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           DatabaseEvent userEvent = await _database.child("users").once();
 
           if (userEvent.snapshot.exists) {
-            // 🔍 Debug: Print entire users data
-            print("Users Data from Firebase: ${userEvent.snapshot.value}");
-
-            List<dynamic> usersData = userEvent.snapshot.value as List<dynamic>;
+            Map<dynamic, dynamic> usersData =
+                userEvent.snapshot.value as Map<dynamic, dynamic>;
 
             // ✅ Loop through the list and find matching email
-            for (var user in usersData) {
-              if (user != null && user["id"].toString() == patientId) {
+            usersData.forEach((key, user) {
+              if (user["id"].toString() == widget.userId) {
                 setState(() {
                   patientEmail = user["email"] ?? "No Email Found";
                 });
 
                 print("✅ User Email Found: $patientEmail");
-                break;
               }
-            }
+            });
           } else {
             print("❌ No users data found in Firebase.");
           }
@@ -108,38 +110,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     }
   }
 
-  void _onItemTapped(int index) {
-    if (index != _selectedIndex) {
-      switch (index) {
-        case 0:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => HomeScreen(userId: widget.patientId)),
-          );
-          break;
-        case 1:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    ConnectPatchScreen(userId: widget.patientId)),
-          );
-          break;
-        case 2:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PersonalInfoScreen(
-                  patientId: patientId, previousPage: "personal_info"),
-            ),
-          );
-          break;
-      }
-    }
-  }
-
-//------------------------------------Front-end----------------------------------
+  //------------------------------------Front-end----------------------------------
   Future<void> _selectDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -186,7 +157,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => HomeScreen(userId: widget.patientId)),
+            builder: (context) => HomeScreen(userId: widget.userId)),
       );
     } catch (e) {
       print("Error updating data: $e");
@@ -203,6 +174,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       return 'assets/woman.png';
     }
     return 'assets/user.png';
+  }
+
+  @override
+  void dispose() {
+    controllers.forEach((key, controller) {
+      controller.dispose();
+    });
+    super.dispose();
   }
 
   @override
@@ -237,7 +216,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
             SizedBox(height: 10),
             Text(
-              "${controllers["Fname"]!.text} ${controllers["Lname"]!.text}",
+              "${controllers["Fname"]!.text.isEmpty ? "First" : controllers["Fname"]!.text} "
+              "${controllers["Lname"]!.text.isEmpty ? "Last" : controllers["Lname"]!.text}",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
@@ -309,7 +289,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   "Save Changes",
                   style: TextStyle(
                     fontSize: 19,
-                    fontFamily: "Nunito",
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -318,12 +297,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: AppFooter(
-        selectedIndex: _selectedIndex,
-        onItemTapped: (index, _) =>
-            _onItemTapped(index), // Pass navigation handler
-        patientId: patientId, // ✅ Ensure the correct patient ID is passed
       ),
     );
   }
