@@ -5,6 +5,7 @@ import 'package:testtest/screens/homepage.dart';
 import 'sign_up_next_screen.dart';
 import 'package:testtest/services/bluetooth_service.dart';
 import 'package:testtest/screens/medical_data_screen.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class ConnectPatchScreen extends StatefulWidget {
   final String userId; // ✅ Add this to receive userId
@@ -21,11 +22,31 @@ class _ConnectPatchScreenState extends State<ConnectPatchScreen> {
   final BluetoothService _bluetoothService = BluetoothService();
   List<flutterBlue.ScanResult> scanResults = [];
   List<flutterBlue.BluetoothDevice> connectedDevices = [];
-
+  String firstName = "";
+  String lastName = "";
   @override
   void initState() {
     super.initState();
+    _fetchPatientInfo();
     _startScan();
+  }
+
+  void _fetchPatientInfo() async {
+    final dbRef = FirebaseDatabase.instance.ref();
+    final snapshot = await dbRef.child("Patient").child(widget.userId).once();
+
+    if (snapshot.snapshot.value != null) {
+      final data = snapshot.snapshot.value as Map;
+      setState(() {
+        firstName = data['Fname'] ?? "";
+        lastName = data['Lname'] ?? "";
+      });
+    } else {
+      // Optional: Handle if user not found
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Patient info not found!")),
+      );
+    }
   }
 
   // Start Bluetooth scanning
@@ -367,13 +388,24 @@ class _ConnectPatchScreenState extends State<ConnectPatchScreen> {
           } else {
             if (!widget.showBackButton) {
               // 🟢 If `showBackButton == false`, go to Sign Up Next Screen
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      MedicalDataScreen(userId: widget.userId),
-                ),
-              );
+              // debugPrint("UserID: ${widget.userId}");
+              // debugPrint("First Name: $firstName");
+              // debugPrint("Last Name: $lastName");
+              // Navigator.pushReplacement(
+              //   context,
+              //   // MaterialPageRoute(
+              //   //   builder: (context) =>
+              //   //       MedicalDataScreen(userId: widget.userId),
+              //   // ),
+              //   MaterialPageRoute(
+              //     builder: (context) => SignUpNextScreen(
+              //       userId: widget.userId,
+              //       firstName: firstName,
+              //       lastName: lastName,
+              //     ),
+              //   ),
+              // );
+              Navigator.pop(context);
             } else {
               // 🟢 If `showBackButton == true`, go back to Home Page
               Navigator.pushReplacement(
