@@ -55,7 +55,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _signUp() async {
     if (!isFormValid) return; // Prevent signing up if form is invalid
+    String userId = idController.text.trim();
 
+    // ✅ Step 1: Check if ID exists in 'users' or 'Patient'
+    DatabaseEvent userCheck =
+        await _database.child("users").child(userId).once();
+    DatabaseEvent patientCheck =
+        await _database.child("Patient").child(userId).once();
+
+    if (userCheck.snapshot.value != null ||
+        patientCheck.snapshot.value != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("This ID is already registered in our system.")),
+      );
+      return; // ⛔ Stop the sign-up process
+    }
     try {
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
@@ -69,8 +84,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       setState(() {
         emailSent = true; // Update UI to show "Verification Sent" message
       });
-
-      String userId = idController.text.trim();
 
       await _database.child("users").child(userId).set({
         "email": emailController.text.trim(),
