@@ -597,6 +597,290 @@ class _HomeScreenState extends State<HomeScreen> {
 
 //---------------------------------------------------------------
 
+// //--------------------Asthma Check-in-----------------------------
+
+//   Future<void> checkAndShowCheckIn(String patientID) async {
+//     if (patientID == null) return;
+
+//     DatabaseReference patientRef =
+//         FirebaseDatabase.instance.ref().child("Patient").child(patientID);
+//     DatabaseReference questionsRef =
+//         FirebaseDatabase.instance.ref().child("Questions");
+
+//     // Fetch patient data
+//     DataSnapshot patientSnapshot = await patientRef.get();
+//     if (patientSnapshot.exists) {
+//       Map<String, dynamic> patientData =
+//           Map<String, dynamic>.from(patientSnapshot.value as Map);
+
+//       // Fetch the registration date (rday) for the patient
+//       String registrationDateString = patientData['rday'];
+//       DateTime registrationDate = DateTime.parse(registrationDateString);
+
+//       // Check if today is the end of the month
+//       DateTime today = DateTime.now();
+//       DateTime lastDayOfMonth = DateTime(today.year, today.month + 1, 0);
+//       if (registrationDate.month == today.month &&
+//           registrationDate.year == today.year &&
+//           today != lastDayOfMonth) {
+//         print("❌ Not the end of the month yet.");
+//         return;
+//       }
+//     }
+
+//     // Fetch questions data
+//     DataSnapshot questionsSnapshot = await questionsRef.get();
+//     if (questionsSnapshot.exists) {
+//       Map<dynamic, dynamic> questions =
+//           Map<dynamic, dynamic>.from(questionsSnapshot.value as Map);
+
+//       DateTime now = DateTime.now();
+
+//       for (var entry in questions.entries) {
+//         Map<String, dynamic> questionData =
+//             Map<String, dynamic>.from(entry.value);
+
+//         if (questionData["patientID"] == patientID &&
+//             questionData.containsKey("date")) {
+//           DateTime lastCheckIn = DateTime.parse(questionData["date"]);
+
+//           if (lastCheckIn.year == now.year && lastCheckIn.month == now.month) {
+//             print(
+//                 "✅ Patient $patientID already checked in this month. Skipping.");
+//             return; // Exit if the check-in has already been done this month
+//           }
+//         }
+//       }
+//     }
+
+//     // Show the check-in form
+//     _showCheckInDialog(patientID);
+//   }
+
+//   void _showCheckInDialog(String patientid) {
+//     showDialog(
+//       context: context,
+//       barrierDismissible: false,
+//       builder: (context) {
+//         return Dialog(
+//           backgroundColor: Colors.white,
+//           shape:
+//               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//           child: LayoutBuilder(
+//             builder: (context, constraints) {
+//               double screenWidth = MediaQuery.of(context).size.width;
+//               double screenHeight = MediaQuery.of(context).size.height;
+
+//               double buttonWidth = screenWidth * 0.30;
+//               double buttonHeight = screenHeight * 0.12;
+//               buttonWidth = buttonWidth.clamp(70, 70);
+//               buttonHeight = buttonHeight.clamp(50, 60);
+
+//               return Container(
+//                 width: screenWidth * 0.9,
+//                 padding: EdgeInsets.all(16),
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     Text(
+//                       "Monthly Asthma Check-In",
+//                       style:
+//                           TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+//                     ),
+//                     SizedBox(height: 16),
+//                     Text(
+//                         "How much has your asthma affected your daily activities this month?"),
+//                     SizedBox(height: 8),
+//                     SingleChildScrollView(
+//                       scrollDirection: Axis.horizontal,
+//                       child: Row(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           _buildClickableButton("Very affected", "😟",
+//                               Colors.red, true, buttonWidth, buttonHeight),
+//                           SizedBox(width: 8),
+//                           _buildClickableButton("Slightly affected", "😐",
+//                               Colors.yellow, true, buttonWidth, buttonHeight),
+//                           SizedBox(width: 8),
+//                           _buildClickableButton("Not affected", "😊",
+//                               Colors.blue, true, buttonWidth, buttonHeight),
+//                         ],
+//                       ),
+//                     ),
+//                     SizedBox(height: 16),
+//                     Text(
+//                         "How severe has your shortness of breath been this month?"),
+//                     SizedBox(height: 8),
+//                     SingleChildScrollView(
+//                       scrollDirection: Axis.horizontal,
+//                       child: Row(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           _buildClickableButton("Very severe", "😟", Colors.red,
+//                               false, buttonWidth, buttonHeight),
+//                           SizedBox(width: 8),
+//                           _buildClickableButton("Mild", "😐", Colors.yellow,
+//                               false, buttonWidth, buttonHeight),
+//                           SizedBox(width: 8),
+//                           _buildClickableButton("Not severe", "😊", Colors.blue,
+//                               false, buttonWidth, buttonHeight),
+//                         ],
+//                       ),
+//                     ),
+//                     SizedBox(height: 16),
+//                     ElevatedButton(
+//                       onPressed: () {
+//                         _saveResponsesToFirebase(patientid);
+//                         Navigator.of(context).pop();
+//                       },
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: const Color.fromRGBO(
+//                             134, 153, 218, 1), // Blue submit button
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                         padding:
+//                             EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+//                       ),
+//                       child: Text("Submit",
+//                           style: TextStyle(color: Colors.white, fontSize: 16)),
+//                     ),
+//                   ],
+//                 ),
+//               );
+//             },
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   Widget _buildClickableButton(String label, String emoji, Color color,
+//       bool isActivity, double width, double height) {
+//     bool isSelected =
+//         isActivity ? _selectedActivity == label : _selectedBreath == label;
+
+//     // Variable to track button press state
+//     bool isPressed = false;
+
+//     return StatefulBuilder(
+//       builder: (context, setState) {
+//         return GestureDetector(
+//           onTapDown: (_) {
+//             // Change the color when the button is pressed
+//             setState(() {
+//               isPressed = true;
+//             });
+//           },
+//           onTapUp: (_) {
+//             // Revert the color when the press is released
+//             setState(() {
+//               isPressed = false;
+//             });
+//           },
+//           onTapCancel: () {
+//             // Revert the color if the tap is canceled
+//             setState(() {
+//               isPressed = false;
+//             });
+//           },
+//           onTap: () {
+//             setState(() {
+//               // Update the selected state when the button is tapped
+//               if (isActivity) {
+//                 _selectedActivity = label;
+//               } else {
+//                 _selectedBreath = label;
+//               }
+//             });
+//           },
+//           child: AnimatedContainer(
+//             duration: Duration(
+//                 milliseconds: 150), // Shorter transition for immediate response
+//             width: width,
+//             height: height,
+//             decoration: BoxDecoration(
+//               color: isPressed
+//                   ? color.withOpacity(
+//                       0.6) // Color when pressed down (lighter opacity)
+//                   : isSelected
+//                       ? color.withOpacity(0.8) // Color when selected
+//                       : color.withOpacity(0.4), // Normal state color
+//               borderRadius: BorderRadius.circular(12),
+//               border: Border.all(
+//                 color: isSelected
+//                     ? Colors.black
+//                     : Colors.transparent, // Border color when selected
+//                 width: 2,
+//               ),
+//               boxShadow: isSelected
+//                   ? [
+//                       BoxShadow(
+//                         color: Colors.black26, // Shadow when selected
+//                         blurRadius: 10,
+//                         spreadRadius: 2,
+//                       )
+//                     ]
+//                   : [],
+//             ),
+//             child: Column(
+//               mainAxisAlignment: MainAxisAlignment.center,
+//               children: [
+//                 Text(emoji, style: TextStyle(fontSize: height * 0.35)),
+//                 SizedBox(height: 4),
+//                 Text(
+//                   label,
+//                   textAlign: TextAlign.center,
+//                   style: TextStyle(
+//                     fontSize: height * 0.14,
+//                     fontWeight: isSelected
+//                         ? FontWeight.bold
+//                         : FontWeight.normal, // Bold when selected
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   Future<void> _saveResponsesToFirebase(String patientID) async {
+//     if (_selectedActivity != null && _selectedBreath != null) {
+//       DatabaseReference databaseRef =
+//           FirebaseDatabase.instance.ref().child("Questions");
+
+//       await databaseRef.push().set({
+//         "patientID": patientID,
+//         "activity": _selectedActivity,
+//         "breath": _selectedBreath,
+//         "date":
+//             DateTime.now().toIso8601String(), // Save the current check-in date
+//       });
+
+//       // 🎯 Save the last check-in date in Firebase under the patient’s record
+//       await FirebaseDatabase.instance
+//           .ref()
+//           .child("Patient")
+//           .child(patientID)
+//           .update({"lastCheckIn": DateTime.now().toIso8601String()});
+
+//       setState(() {
+//         _showSurvey = false; // Hide survey after saving
+//       });
+
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Responses saved successfully!")),
+//       );
+
+//       // 🎯 Show emergency notification after submission
+//     } else {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Please select an option for both questions.")),
+//       );
+//     }
+//   }
 //--------------------Asthma Check-in-----------------------------
 
   Future<void> checkAndShowCheckIn(String patientID) async {
@@ -687,7 +971,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 8),
                     Text(
                         "How much has your asthma affected your daily activities this month?"),
                     SizedBox(height: 8),
@@ -696,18 +980,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildClickableButton("Very affected", "😟",
+                          _buildClickableButton("High Limitation", "😟",
                               Colors.red, true, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildClickableButton("Slightly affected", "😐",
+                          _buildClickableButton("Moderate Limitation", "😐",
                               Colors.yellow, true, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildClickableButton("Not affected", "😊",
+                          _buildClickableButton("No Limitation", "😊",
                               Colors.blue, true, buttonWidth, buttonHeight),
                         ],
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 8),
                     Text(
                         "How severe has your shortness of breath been this month?"),
                     SizedBox(height: 8),
@@ -716,18 +1000,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildClickableButton("Very severe", "😟", Colors.red,
+                          _buildClickableButton("Severe", "😟", Colors.red,
                               false, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildClickableButton("Mild", "😐", Colors.yellow,
+                          _buildClickableButton("Moderate", "😐", Colors.yellow,
                               false, buttonWidth, buttonHeight),
                           SizedBox(width: 8),
-                          _buildClickableButton("Not severe", "😊", Colors.blue,
+                          _buildClickableButton("None", "😊", Colors.blue,
                               false, buttonWidth, buttonHeight),
                         ],
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () {
                         _saveResponsesToFirebase(patientid);
@@ -832,7 +1116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: height * 0.14,
+                    fontSize: height * 0.10,
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal, // Bold when selected
@@ -881,6 +1165,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
+
+//----------------------------------------------
 
 //----------------------------------------------
 
